@@ -8,8 +8,8 @@
 #include <SPI.h>
 #include <SSD1322_for_Adafruit_GFX.h>
 
-#define SCREEN_WIDTH 256 // OLED display width, in pixels
-#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+#define SCREEN_WIDTH 256 // in pixels
+#define SCREEN_HEIGHT 64 // in pixels
 #define GRAY_BLACK 0x0
 #define GRAY_1 0x1
 #define GRAY_2 0x2
@@ -29,29 +29,19 @@ Adafruit_SSD1322 display(SCREEN_WIDTH, SCREEN_HEIGHT,
   &SPI, OLED_DC, OLED_RESET, OLED_CS);
 
 
-#define soundPin 19       //for sound
 #define buttPin 2
-#define encButtPin 3   //may not be implemented. pushbutton on the encoder
+#define encButtPin 3   
 #define encApin 4
 #define encBpin 5
-//const char inputPins[] = 
-//  { buttPin, encoderPinA, encoderPinB, encoder buttPin};
+#define soundPin 19   
 
-//volatile bool buttState = HIGH;
-//volatile bool buttStatePrev = HIGH;
 volatile bool bButtFlag = false;
-//volatile bool encButtState = HIGH;
-//volatile bool encButtStatePrev = HIGH;
 volatile bool bEncButtFlag = false;
-// volatile bool encAstate = LOW;
-// volatile bool encAstatePrev = LOW;
-// volatile bool encBstate = LOW;
-// volatile bool encBstatePrev = LOW;
-//unsigned long buttnDelayTime = 35; //ms
-//unsigned long buttPressTime = 0;
-//unsigned long encButtPressTime = 0;
 volatile bool bCWflag = false;
 volatile bool bCCflag = false;
+volatile bool bResetFlag = false;
+#define lResetStall 10000;  //ms. how long to wait before the reset button does something
+unsigned long lResetTimer = 0;
 
 
 const unsigned long randThreshold = 30; //rough percentage of screen starting with live cells
@@ -60,7 +50,7 @@ volatile int nDelayTime = 45;
 #define delayIncrement 10
 #define delayMax 800
 int nHistoryCounter = 0;
-const int nHistoryThreshold = 30;  //(n*30) (common multiple of oscillators)
+const int nHistoryThreshold = 30;  //(30*n) (common multiple of oscillators)
 unsigned long populationCounter = 0;
 bool currentGen[SCREEN_HEIGHT][SCREEN_WIDTH];
 bool nextGen[SCREEN_HEIGHT][SCREEN_WIDTH];
@@ -69,7 +59,7 @@ bool historyGen[SCREEN_HEIGHT][SCREEN_WIDTH];
 
 void setup()   
 {
-  Serial.begin(9600);
+  //Serial.begin(9600);
 
   pinMode(buttPin, INPUT_PULLUP);
   pinMode(encButtPin, INPUT_PULLUP);
@@ -83,13 +73,13 @@ void setup()
 
   if ( ! display.begin(0x3D) ) 
   {
-     Serial.print("Unable to initialize OLED");
+     //Serial.print("Unable to initialize OLED");
      while (1) yield();
   }
   display.cp437(true);    //proper extended character set
   display.setRotation(0);   //landscape
   display.clearDisplay();
-  display.display();
+  //display.display();
   display.setTextSize(1);
   display.setTextWrap(false);
   display.setTextColor(SSD1322_WHITE);
@@ -124,7 +114,7 @@ void enc_a_isr()
     bCCflag = true;
 
     /////////
-    //program specific logic for CC rotation
+    // program specific logic for CC rotation
     nDelayTime += delayIncrement;
     if(nDelayTime > delayMax)
     {  nDelayTime = delayMax;
@@ -137,7 +127,7 @@ void enc_a_isr()
     bCCflag = false;
     
     /////////
-    //program specific logic for CW rotation
+    // program specific logic for CW rotation
     nDelayTime -= delayIncrement;
     if(nDelayTime < 0)
     { nDelayTime = 0;
@@ -168,6 +158,7 @@ void loop()
     }  
   }
 
+  /*
   if(bCCflag)
   {
 
@@ -177,6 +168,7 @@ void loop()
   {
 
   }
+  */
 
   if(nDelayTime<delayMax)
   { 
@@ -209,12 +201,9 @@ void loop()
     }
   }
 
-
- //cell_old();
- cell_efficient();
+  cell_efficient();   //cell_old();
 
   bool bChangeDetected = false;
-
   for(int row = 0; row < SCREEN_HEIGHT; row++)
   {
     for(int col = 0; col < SCREEN_WIDTH; col++)
@@ -232,7 +221,6 @@ void loop()
     }
   }
 
-
   if(nHistoryCounter >= nHistoryThreshold)
   {
     nHistoryCounter = 0;
@@ -243,23 +231,58 @@ void loop()
 
   display.display();
   nHistoryCounter++;
-  
+
+
+  ///// exit handling /////
+  if(bEncButtFlag && !bResetFlag)
+  {
+    lResetTimer = millis()+lResetStall;
+    bResetFlag  = true;
+    bEncButtFlag = false;
+    //display.drawPixel(0,SCREEN_WIDTH-1,GRAY_WHITE);
+    //display.display();
+  }
+  if(bResetFlag)
+  {
+    if(lResetTimer<millis())
+    {
+      if(!digitalRead(encButtPin))    //yes i know these are nested but i'm doing that intentionally
+      {
+        display.clearDisplay();
+        display.display();
+        while(!digitalRead(encButtPin))
+        {
+          //wait for the sweet release of encButt
+        }
+      //and then exit the program back to main menu somehow (without creating memory leaks yay!)
+      //reset();
+      }
+      else
+      { //display.drawPixel(0,SCREEN_WIDTH-1,0);
+      }
+      bResetFlag = false;
+      bEncButtFlag = false;
+    }
+  }
 }
 
-void cell_efficient()
+void cell_efficient()   //why yes, this does automatically scale to fit any screen size
 {
+
+  bool topleft=false, above=false, topright=false, left=false, right=false, botleft=false, below=false, botright=false;
+
   for(int row = 0; row < SCREEN_HEIGHT; row++)
   {
     for(int col = 0; col < SCREEN_WIDTH; col++)
     {
-      bool topleft = currentGen[(row-1+SCREEN_HEIGHT) % SCREEN_HEIGHT][(col-1+SCREEN_WIDTH) % SCREEN_WIDTH];
-      bool above = currentGen[(row-1+SCREEN_HEIGHT) % SCREEN_HEIGHT][col];
-      bool topright = currentGen[(row-1+SCREEN_HEIGHT) % SCREEN_HEIGHT][(col+1) % SCREEN_WIDTH];
-      bool left = currentGen[row][(col-1+SCREEN_WIDTH) % SCREEN_WIDTH];
-      bool right = currentGen[row][(col+1) % SCREEN_WIDTH];
-      bool botleft = currentGen[(row+1) % SCREEN_HEIGHT][(col-1+SCREEN_WIDTH) % SCREEN_WIDTH];
-      bool below = currentGen[(row+1) % SCREEN_HEIGHT][col];
-      bool botright = currentGen[(row+1) % SCREEN_HEIGHT][(col+1) % SCREEN_WIDTH];
+      topleft = currentGen[(row-1+SCREEN_HEIGHT) % SCREEN_HEIGHT][(col-1+SCREEN_WIDTH) % SCREEN_WIDTH];
+      above = currentGen[(row-1+SCREEN_HEIGHT) % SCREEN_HEIGHT][col];
+      topright = currentGen[(row-1+SCREEN_HEIGHT) % SCREEN_HEIGHT][(col+1) % SCREEN_WIDTH];
+      left = currentGen[row][(col-1+SCREEN_WIDTH) % SCREEN_WIDTH];
+      right = currentGen[row][(col+1) % SCREEN_WIDTH];
+      botleft = currentGen[(row+1) % SCREEN_HEIGHT][(col-1+SCREEN_WIDTH) % SCREEN_WIDTH];
+      below = currentGen[(row+1) % SCREEN_HEIGHT][col];
+      botright = currentGen[(row+1) % SCREEN_HEIGHT][(col+1) % SCREEN_WIDTH];
       
       bool neighbors[] = {topleft,above,topright,left,right,botleft,below,botright};
       uint8_t neighborCount = 0;
@@ -270,7 +293,7 @@ void cell_efficient()
         { neighborCount++;
         }
       }
-        if(!currentGen[row][col] && neighborCount == 3) //dead cell with 3 live neighbors is born
+      if(!currentGen[row][col] && neighborCount == 3) //dead cell with 3 live neighbors is born
       { nextGen[row][col] = true;
       }
       else if(currentGen[row][col])
