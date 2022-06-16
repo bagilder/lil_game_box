@@ -32,6 +32,7 @@
 #ifndef SOFTWAREENCODER
 #define ENCODERLIBRARY
 #include <Encoder.h>
+#define ENCODER_USE_INTERRUPTS
 #endif
 #endif
 
@@ -93,24 +94,25 @@ extern volatile unsigned long lResetTimer;
 
 #define lDebounceDelay 15	//ms.
 #ifdef SOFTWAREENCODER
-extern volatile unsigned long canonTimeA;
-//extern volatile unsigned long canonTimeB;
+extern volatile unsigned long lcanonTimeA;
+//extern volatile unsigned long lcanonTimeB;
 #endif
 #ifdef SOFTWAREBUTTON
-extern volatile unsigned long canonTimeButt;
+extern volatile unsigned long lcanonTimeButt;
 #endif
 #ifdef SOFTWAREENCBUTTON
-extern volatile unsigned long canonTimeEncButt;
+extern volatile unsigned long lcanonTimeEncButt;
 #endif
 
 void oled_setup(byte r);
 void butt_isr();
 void enc_butt_isr();
+#ifndef ENCODERLIBRARY
 void enc_a_isr();
 void enc_a_isr2();
 void enc_a_isr3();
 //void enc_b_isr();
-#ifdef ENCODERLIBRARY
+#else
 void check_encoder();
 #endif
 

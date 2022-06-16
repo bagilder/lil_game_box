@@ -226,24 +226,6 @@ void enc_a_isr()		//called on any changing edge
 	}
 }
 
-#ifdef ENCODERLIBRARY
-void check_encoder()
-{
-	if(knob.read() > 0)
-	{
-		flag.CWflag = true;
-		flag.CCflag = false;
-		knob.write(0);
-	}
-	else if(knob.read() < 0)
-	{
-		flag.CWflag = false;
-		flag.CCflag = true;	
-		knob.write(0);
-	}
-}
-#endif
-
 
 /*
 void enc_a_isr2()		//only called on rising edge
@@ -367,4 +349,22 @@ void enc_a_isr3()		//only on rising
 #endif	//resolve which encA isr to use
 
 
+#ifdef ENCODERLIBRARY
+void check_encoder()
+{
+	int8_t tempRead = knob.read();
+	if(tempRead < 0)
+	{
+		flag.CWflag = true;
+		flag.CCflag = false;
+		knob.write(0);
+	}
+	else if(tempRead > 0)
+	{
+		flag.CWflag = false;
+		flag.CCflag = true;	
+		knob.write(0);
+	}
+}
+#endif
 
