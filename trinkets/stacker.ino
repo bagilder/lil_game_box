@@ -1,44 +1,14 @@
 ///////////////////////////
 // stacker for er-oledm032
-// bgilder 27 may 2022
+// bgilder 28 may 2022
 ///////////////////////////
 
-#include <SPI.h>
-#include <SSD1322_for_Adafruit_GFX.h>
-//#include <Bounce2.h>
 
-#define SCREEN_WIDTH 256 // in pixels
-#define SCREEN_HEIGHT 64 // in pixels
-#define GRAY_BLACK 0x0
-#define GRAY_1 0x1
-#define GRAY_2 0x2
-#define GRAY_3 0x3
-#define GRAY_4 0x4
-#define GRAY_5 0x5
-#define GRAY_6 0x6
-#define GRAY_7 0x8
-#define GRAY_8 0xC
-#define GRAY_WHITE 0xF
 
-// use hardware SPI
-#define OLED_DC     7
-#define OLED_CS     9
-#define OLED_RESET  8
-Adafruit_SSD1322 display(SCREEN_WIDTH, SCREEN_HEIGHT,
-  &SPI, OLED_DC, OLED_RESET, OLED_CS);
+#include <gamebox.h>
 
-#define buttPin 2
-#define encButtPin 3   
-//#define encApin 4
-//#define encBpin 5
-#define soundPin 19       
-volatile bool bButtFlag = false;
-volatile bool bEncButtFlag = false;
-//volatile bool bCWflag = false;
-//volatile bool bCCflag = false;
-volatile bool bResetFlag = false;
-#define lResetStall 10000;  //ms. how long to wait before the reset button does something
-unsigned long lResetTimer = 0;
+#define SCREEN_ROTATION 3 //0=regular landscape, 1=box turn CC 90* portrait, 2=upside down, 3=box turn CW 90* portrait
+
 
 
 #define nBlockWidth 8   //must be even factor of screen height (for portrait)
@@ -58,39 +28,9 @@ uint8_t nBlockCount = nBlockCountInit;
 bool bAnimateDir = true;  //which way we're moving. t=right,f=left
 
 
-void butt_isr()
-{  bButtFlag = true;
-}
-
-void enc_butt_isr()
-{  bEncButtFlag = true;
-}
-
-
 void setup()   
 {
-  //Serial.begin(115200);
-
-  pinMode(buttPin, INPUT_PULLUP);
-  pinMode(encButtPin, INPUT_PULLUP);
-  attachInterrupt(buttPin, butt_isr, FALLING);
-  attachInterrupt(encButtPin, enc_butt_isr, FALLING);
-//  pinMode(encApin, INPUT_PULLUP);
-//  pinMode(encBpin, INPUT_PULLUP);
-  //attachInterrupt(encApin, enc_a_isr, CHANGE);
-  //attachInterrupt(encBpin, enc_b_isr, CHANGE);
-
-  if ( ! display.begin(0x3D) ) 
-  {
-    // Serial.print("Unable to initialize OLED");
-     while (1) yield();
-  }
-  display.cp437(true);  //proper extended character set
-  display.setRotation(3);	//portrait
-  display.clearDisplay();
-  //display.display();
-  display.setTextSize(1);
-  display.setTextWrap(false);
+  oled_setup(SCREEN_ROTATION);
 
   title_screen_stacker();
 }
@@ -133,7 +73,7 @@ void title_screen_stacker()
 void loop()
 {
 
-  if(bButtFlag) //we check where we're situated, lop off any dead blocks, and determine if we've lost
+  if(flag.buttFlag) //we check where we're situated, lop off any dead blocks, and determine if we've lost
   {
     bool bLose = false;
     if(nCurrentRow>=SCREEN_WIDTH/nBlockHeight - 1) //only the bottom row
@@ -170,22 +110,22 @@ void loop()
       {  win_state();
       }
     }
-    bButtFlag = false;
+    flag.buttFlag = false;
   }
   
   animate_row();
 
 
   ///// exit handling /////
-  if(bEncButtFlag && !bResetFlag)
+  if(flag.encButtFlag && !flag.resetFlag)
   {
     lResetTimer = millis()+lResetStall;
-    bResetFlag  = true;
-    bEncButtFlag = false;
+    flag.resetFlag  = true;
+    flag.encButtFlag = false;
     display.drawPixel(SCREEN_HEIGHT-1,0,1);
     display.display();
   }
-  if(bResetFlag)
+  if(flag.resetFlag)
   {
     if(lResetTimer<millis())
     {
@@ -203,8 +143,8 @@ void loop()
       else
       { display.drawPixel(SCREEN_HEIGHT-1,0,0);
       }
-      bResetFlag = false;
-      bEncButtFlag = false;
+      flag.resetFlag = false;
+      flag.encButtFlag = false;
     }
   }
 }
@@ -241,8 +181,8 @@ void lose_state()
     delay(400);
   }
   display.clearDisplay();
-  bResetFlag = false;
-  bEncButtFlag = false;
+  flag.resetFlag = false;
+  flag.encButtFlag = false;
 }
 
 void win_state()
@@ -272,8 +212,8 @@ void win_state()
   display.display();
   delay(3000);
   display.clearDisplay();
-  bResetFlag = false;
-  bEncButtFlag = false;
+  flag.resetFlag = false;
+  flag.encButtFlag = false;
 }
 
 void animate_row()
