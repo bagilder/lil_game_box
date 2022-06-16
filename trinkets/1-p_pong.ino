@@ -85,6 +85,9 @@ void draw_graphics()
 
 void loop()
 {
+  #ifdef ENCODERLIBRARY
+  check_encoder();  //update rotational encoder flags
+  #endif
 
   if(flag.CWflag)
   {

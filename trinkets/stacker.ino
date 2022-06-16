@@ -1,6 +1,6 @@
 ///////////////////////////
 // stacker for er-oledm032
-// bgilder 28 may 2022
+// bgilder 15 june 2022
 ///////////////////////////
 
 
@@ -72,6 +72,9 @@ void title_screen_stacker()
 
 void loop()
 {
+  #ifdef ENCODERLIBRARY
+  check_encoder();  //update rotational encoder flags
+  #endif
 
   if(flag.buttFlag) //we check where we're situated, lop off any dead blocks, and determine if we've lost
   {
