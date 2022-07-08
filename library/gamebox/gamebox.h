@@ -50,9 +50,12 @@
 #define GRAY_WHITE 0xF
 
 // use hardware SPI
-#define OLED_DC     7
+/*#define OLED_DC     7   //modified pinout 
 #define OLED_CS     9
-#define OLED_RESET  8
+#define OLED_RESET  8*/
+#define OLED_RESET 8    //using original library pinout
+#define OLED_DC  9
+#define OLED_CS 10
 extern Adafruit_SSD1322 display;
 
 
