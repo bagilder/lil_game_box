@@ -43,6 +43,8 @@ void setup()
     knob.write(-1*centerHoriz);  //listen idk. but it keeps it in bounds so i'm not gonna complain 
     //knob.write(centerVert);
 
+    display.setCursor((SCREEN_WIDTH-1)-(6*10)+2,0);   //top right corner, pixel packed
+    display.print("bg 14jul22");  //10 characters long
     display.setCursor(0,9);
     display.println("etch a sketch!~\n");
     display.println("turn knob to move cursor");
@@ -59,7 +61,7 @@ void loop()
     bool quickCheck = digitalRead(buttPin);
     if(quickCheck)
     {
-      holdState = 0;    //oops not anymore
+      holdState = 0;      //oops not anymore
       flag.buttFlag = 0;
       knob.write(-1*positionHoriz);
     }
@@ -69,7 +71,7 @@ void loop()
       {
         newVert = knob.read();  //up and down       //absolute
         
-        if(newVert < 0)
+        if(newVert < 0)   //bounds check
         { 
           newVert = 0;
           knob.write(0);  //directly overwrites encoder position
@@ -92,19 +94,19 @@ void loop()
         if(currentNow >= holdTime + holdDelay)
         {
           holdTime = millis();
-          holdState = true;    //this is some dumb shenanigans to make sure first entrance doesn't trigger a hold
+          holdState = true;           //pretty sure the first entrance triggers a hold but whatever
           knob.write(positionVert);
         }
       }
     }
-    holdStatePrev = holdState;   //yes, there has to be a better way to do this
+    holdStatePrev = holdState;   
   }
   else
   {
     newHoriz = knob.read();  //left and right  //absolute
     newHoriz *= -1;
 
-    if(newHoriz < 0)
+    if(newHoriz < 0)    //bounds check
     { 
       newHoriz = 0;
       knob.write(0); //directly overwrites encoder position
@@ -116,8 +118,8 @@ void loop()
     }
     if(positionHoriz != newHoriz)
     { 
-      draw_point(GRAY_3);   //kills the white dot     ///gray3 because of pwm latency on oled itself. horiz lines get darker the more the row is illuminated
-      draw_line(newHoriz,GRAY_3,false);
+      draw_point(GRAY_3);   //kills the white dot  
+      draw_line(newHoriz,GRAY_3,false);   //gray3 because of pwm latency on oled itself. horiz lines get darker the more the row is illuminated. "feels" better
       positionHoriz = newHoriz;
     }
   }
