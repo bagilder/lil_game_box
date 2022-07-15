@@ -1,12 +1,13 @@
 ///////////////////////////
 // 1-knob etch a sketch for er-oledm032
-// shamelessly stolen from my and ruby's audrey
+// shamelessly stolen from my and ruby's audrey2
 // bgilder ported 13 july 2022
 ///////////////////////////
 
 
 //dissolves on encoder press.
-//changes directions on button hold. since we're double dipping on encoder reads, have to do delta scheme
+//changes directions on button hold. since we're double dipping on encoder reads, must write alternate direction position to encoder buffer on change
+//added draw_line to fix draw stutter issue
 
 
 #include <gamebox.h>
@@ -20,6 +21,7 @@ const char randThreshold = 30;
 const char eraseIteration = 10;   //number of times the randomized clearing function will run before blacking the screen
 const long centerHoriz = SCREEN_WIDTH/2-1;
 const long centerVert = SCREEN_HEIGHT/2-1;
+const int vertOffset = SCREEN_HEIGHT-1;   //for vertical encoder behavior switching. change to 0 or SCREEN_HEIGHT-1 to reverse vertical movement behavior
 
 
 // THESE ARE THE VARIABLES
@@ -31,9 +33,10 @@ long newVert, newHoriz;
 long positionHoriz = centerHoriz;
 long positionVert = centerVert;
 unsigned long holdTime = 0;
+long startLastVert = centerVert;   //for draw_line. trying to kill the line stutter effect.
+long startLastHoriz = centerHoriz;
 
-
-void setup () 
+void setup() 
 {
     oled_setup(SCREEN_ROTATION);
     display.clearDisplay();
@@ -78,7 +81,8 @@ void loop()
         }
         if(positionVert != newVert)
         { 
-          draw_point(GRAY_4);
+          draw_point(GRAY_2);   //kills the white dot
+          draw_line(newVert,GRAY_2,true);
           positionVert = newVert;
         } 
       }
@@ -112,7 +116,8 @@ void loop()
     }
     if(positionHoriz != newHoriz)
     { 
-      draw_point(GRAY_4);
+      draw_point(GRAY_3);   //kills the white dot     ///gray3 because of pwm latency on oled itself. horiz lines get darker the more the row is illuminated
+      draw_line(newHoriz,GRAY_3,false);
       positionHoriz = newHoriz;
     }
   }
@@ -134,7 +139,23 @@ void loop()
 
 void draw_point(char Color)
 {
-  display.drawPixel(positionHoriz,SCREEN_HEIGHT-1-positionVert, Color);
+  display.drawPixel(positionHoriz,vertOffset-positionVert, Color);   //(height-1 - vert) reverses direction of movement on vertical knob spin. do what feels good
+  display.display();
+}
+
+
+void draw_line(long stop, char Color, bool dir)    //0 = horiz, 1 = vert. this fixes stuttering issue with point draw scheme
+{
+  if(dir) // vertical
+  {
+    display.drawLine(positionHoriz, vertOffset-startLastVert, positionHoriz, vertOffset-stop, Color);   //start x, start y, end x, end y, color 
+    startLastVert = stop;
+  }
+  else  // horizontal
+  {
+    display.drawLine(startLastHoriz, vertOffset-positionVert, stop, vertOffset-positionVert, Color);   //start x, start y, end x, end y, color  
+    startLastHoriz = stop;
+  }
   display.display();
 }
 
@@ -148,7 +169,7 @@ void pixel_dissolve()
       for(int col = 0; col < SCREEN_WIDTH; col++)
       {
         if(random(100) < randThreshold) 
-        { display.drawPixel(col,row, GRAY_BLACK);
+        { display.drawPixel(col, row, GRAY_BLACK);
         }
       }
     }
