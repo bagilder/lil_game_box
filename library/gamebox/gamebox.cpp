@@ -49,6 +49,8 @@ void oled_setup(byte r)
   attachInterrupt(encButtPin, enc_butt_isr, FALLING);
   pinMode(encApin, INPUT_PULLUP);
   pinMode(encBpin, INPUT_PULLUP);
+  pinMode(soundGroundPin, OUTPUT);
+  digitalWrite(soundGroundPin, LOW);
   #ifndef ENCODERLIBRARY
   attachInterrupt(encApin, enc_a_isr, CHANGE);
   //attachInterrupt(encBpin, enc_b_isr, RISING);
@@ -66,6 +68,7 @@ void oled_setup(byte r)
   display.setTextSize(1);
   display.setTextColor(GRAY_WHITE);
   display.setTextWrap(false);
+  display.setCursor(0,0);
 
   //lResetTimer = 0;
 
@@ -350,7 +353,7 @@ void enc_a_isr3()		//only on rising
 
 
 #ifdef ENCODERLIBRARY
-void check_encoder()
+void check_encoder()		//this squashes a lot of the info but it means i don't have to refactor my earlier trinkets so ¯\_(ツ)_/¯
 {
 	int8_t tempRead = knob.read();
 	if(tempRead < 0)

@@ -30,13 +30,13 @@
 #ifndef VOTINGENCODER
 //#define SOFTWAREENCODER			//we are software debouncing encoder rotation. incompatible with voting scheme
 #ifndef SOFTWAREENCODER
-#define ENCODERLIBRARY
+#define ENCODERLIBRARY        //we're just using a dang library
 #include <Encoder.h>
 #define ENCODER_USE_INTERRUPTS
 #endif
 #endif
 
-#define SCREEN_WIDTH 256 // in pixels
+#define SCREEN_WIDTH 256 // in pixels     ///yes i know i'm abusing define macros but the compiler is smarter than i am
 #define SCREEN_HEIGHT 64 // in pixels
 #define GRAY_BLACK 0x0
 #define GRAY_1 0x1
@@ -73,10 +73,11 @@ typedef struct
 } flagfield8;
 
 #define buttPin 2
-#define encButtPin 3   
+#define encButtPin 3
 #define encApin 4
 #define encBpin 5
-#define soundPin 19       
+#define soundGroundPin 18   //dubious but it just might work
+#define soundPin 19
 /*
 volatile bool bButtFlag = false;
 volatile bool bEncButtFlag = false;
@@ -117,6 +118,7 @@ void enc_a_isr3();
 //void enc_b_isr();
 #else
 void check_encoder();
+extern Encoder knob;
 #endif
 
 
