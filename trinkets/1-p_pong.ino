@@ -3,16 +3,18 @@
 // bgilder 29 may 2022
 ///////////////////////////
 
+/// 15 july 22 update:
+//penalizes relaunch button cheese
+//removed detect_collisions()
+//paddle-area-specific dy adjustments (new paddle graphic to suggest area differences)
+//fiddled with title screen
+//decreased paddle move distance (more rotations for full coverage)
 
 
 /// to do: add left and right graphics.
-//         add paddle-area-specific dy adjustments
-
-
 
 
 #include <gamebox.h>
-
 
 #define SCREEN_ROTATION 0 //0=regular landscape, 1=box turn CC 90* portrait, 2=upside down, 3=box turn CW 90* portrait
 
@@ -39,7 +41,7 @@ uint8_t ballNext = 0;
 #define paddleLength SCREEN_HEIGHT/4
 #define paddlePosDefault SCREEN_HEIGHT/2 - paddleLength/2
 int8_t paddlePos = paddlePosDefault;
-#define paddleMove 6
+#define paddleMove 4
 unsigned long elapsedTime = 0;
 
 void setup()   
@@ -51,27 +53,24 @@ void setup()
   {
     // kill time
   }
-
+  flag.buttFlag = 0;  //doesn't give cpu free point at start of game
   display.clearDisplay();
   draw_graphics();
   randomSeed(millis());
   delay(100);
+  display.setTextSize(6);
   draw_score();
   draw_paddle();
   draw_ball();
-
   new_ball();
-
-
-
 }
 
 void title_screen_pong()
 {   
-    display.setCursor(8,2);
+    display.setCursor(40,2);
     display.println("hey it's a one player pong!");
     display.println("bespoke version by bgilder 30may2022");
-    display.println("twist to move paddle\n\nbutton relaunches ball");
+    display.println("\n\ntwist to move paddle\n\nbutton relaunches ball");
     display.display();
 }
 
@@ -117,12 +116,12 @@ void loop()
 
   if(flag.buttFlag)
   {
+    nScore++;   //penalizes relaunch-to-avoid-loss cheese
     new_ball();
     flag.buttFlag = 0;
   }
 
   calculate_ball();
-  detect_collisions();
   draw_score();
   draw_paddle();
   draw_ball();
@@ -136,6 +135,7 @@ void new_ball()
   
   dy = random(velBound)*2-velBound; //give random up/down direction for ball to first fire
   paddlePos = paddlePosDefault;
+  draw_score();
   draw_paddle();
   draw_ball();
   delay(newBallDelay);
@@ -178,9 +178,33 @@ void calculate_ball()
   { dy *= -1;
   }
 
-  if(x+dx/elapsedTime < paddleOffset+nLeftBound+1 && (y>= paddlePos && y<(paddlePos+paddleLength))) //paddle hit (i hope). bounce back 
-  { dx *= -1;
+  if(x+dx/elapsedTime < paddleOffset+nLeftBound+1 && (y>= paddlePos && y<=(paddlePos+paddleLength))) //paddle hit (i hope). bounce back 
+  { 
+    dx *= -1;
     dx+=.5;
+
+    if(y>=paddlePos && y<(paddlePos+paddleLength/4))  //if we hit on the bottom quarter of the paddle
+    {
+      if(dy<0)
+      { dy += 0.25*dy;
+      }
+      else
+      { dy -= .3*dy;
+      }
+    }
+    else if(y>(paddlePos+3*paddleLength/4) && y<=(paddlePos+paddleLength))  //if we hit on the top quarter of the paddle
+    {
+      if(dy<0)
+      { dy -= .3*dy;
+      }
+      else
+      { dy += .25*dy;
+      }
+    }
+    
+    if(!dy)     //so we don't get stuck back and forth forever
+    { dy = 0.1;
+    }
   }
 
   xPrev = x;
@@ -195,90 +219,12 @@ void calculate_ball()
   elapsedTime = now;
 }
 
-void detect_collisions()
-{
-
-}
 
 void draw_score()
 {
- // uint8_t scoreWidth = SCREEN_WIDTH /8;
- // uint8_t scoreHeight = SCREEN_HEIGHT /4;
- // uint8_t nScoreArrayLength = 2;
-    /*switch(nScore %=10)
-    {
-      case 0:
-
-      bool array[] = {};
-      break;
-
-      case 1:
-      
-      bool array[] = {};
-      break;
-
-      
-      case 2:
-
-      break;
-
-      
-      case 3:
-
-      break;
-
-      
-      case 4:
-
-      break;
-
-      
-      case 5:
-
-      break;
-
-      
-      case 6:
-
-      break;
-
-      
-      case 7:
-
-      break;
-
-
-      case 8:
-
-      break;
-
-      case 9:
-
-      break;  
-
-    }*/
-/*
-  bool array[10][nScoreArrayLength] = 
-  {
-    {1,0},    //0
-    {0,1},    //1
-    {1,0},    //2
-    {1,1},    //3
-    {0,0},    //4
-    {0,0},    //5
-    {0,0},    //6
-    {0,0},    //7
-    {0,0},    //8
-    {0,0}     //9
-  };
-
-    for(int loop = 0; loop < nScoreArrayLength; loop++)
-    {  display.drawPixel(loop%scoreWidth + (SCREEN_WIDTH/2-scoreWidth/2),loop%scoreHeight ,array[nScore%=10][loop] );
-    }*/
   display.fillRect(nLeftBound,0,nRightBound - nLeftBound ,SCREEN_HEIGHT, GRAY_BLACK);
   display.drawRect(nLeftBound,0,nRightBound - nLeftBound ,SCREEN_HEIGHT, GRAY_3);
   display.setCursor(114,10);
-  display.setTextSize(6);
   display.setTextColor(GRAY_1);
   display.print(nScore%=10);
 }
@@ -290,7 +236,8 @@ void draw_paddle()
     if(paddlePos<1)
       paddlePos = 1;
     display.drawRect(nLeftBound+paddleOffset, 1,2,SCREEN_HEIGHT-2, GRAY_BLACK);   //erase entire paddle space (excluding boundary)
-    display.drawRect(nLeftBound+paddleOffset, paddlePos, 2, paddleLength, GRAY_6);
+    display.drawRect(nLeftBound+paddleOffset+1, paddlePos, 1, paddleLength, GRAY_6);
+    display.drawRect(nLeftBound+paddleOffset, paddlePos+paddleLength/4, 2, paddleLength/2, GRAY_6);
 }
 
 void draw_ball()
