@@ -68,7 +68,7 @@ void loop()
   display.display();
   delay(1000);
   draw_position(blockList[currentPos].x,blockList[currentPos].y);
-  display.display();
+  display.display();  //hide final position square
   while(digitalRead(buttPin))
   {  delay(1);   //no need to burn yourself out while waiting
   }
@@ -190,6 +190,6 @@ void draw_position(int _x, int _y)
       { display.drawLine(xApparent,yApparent+blockSize,xApparent,yApparent,GRAY_3);                     //wheat
       }
       if(blockList[index].visited)
-      { display.fillRect(xApparent+1,yApparent+1,blockSize-1,blockSize-1,GRAY_1);
+      { display.fillRect(xApparent+1,yApparent+1,blockSize-1,blockSize-1,GRAY_1); //after the walls are drawn, show where we've been
       }
 }
