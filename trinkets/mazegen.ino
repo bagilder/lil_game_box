@@ -24,7 +24,7 @@ typedef struct
     visited:1;
 } positionboy;
 
-std::vector<positionboy> blockList;  //will arduino allow me to do vector stack shenanigans? we'll see
+std::vector<positionboy> blockList; 
 std::stack<int> mazeStack;
 
 const int blockSize = 8;   //how many pixels square each block will be
@@ -32,7 +32,7 @@ const int rows = (SCREEN_HEIGHT) / blockSize;
 const int cols = (SCREEN_WIDTH) / blockSize;
 const int drawDelay = 25;
 int totalVisits = 0;
-int currentPos = 0;  //dude you fool just use this to store the index of the blocklist
+int currentPos = 0;  //index in the blocklist
 
 
 void setup()   
@@ -47,7 +47,7 @@ void setup()
   }
   display.clearDisplay();
   display.display();
-  randomSeed(millis()%253);
+  randomSeed(millis());
   delay(500);
   populate_vector();
 }
@@ -109,61 +109,47 @@ void neighbors(int ex, int wy)
   std::vector<int> neighborChoices;
     
   int upindex = ex + (wy-1)*cols;
-  int rightindex = (ex+1) + wy*cols;
+  int rightindex = (ex+1) + wy*cols;  //or, currentPos+1
   int downindex = ex + (wy+1)*cols;
-  int leftindex = (ex-1) + wy*cols;
+  int leftindex = (ex-1) + wy*cols;   //or, currentPos-1
 
-  if(wy > 0)  //we're not on the top row
-  {
-    if(!blockList[upindex].visited)
-    {  neighborChoices.push_back(0);
-    }
+  if(wy > 0  &&  !blockList[upindex].visited)  //we're not on the top row & can move up
+  { neighborChoices.push_back(0);
   }
-  if(ex < cols-1) //we're not on the right side
-  {
-    if(!blockList[rightindex].visited)
-    {  neighborChoices.push_back(1);
-    }
+  if(ex < cols-1  &&  !blockList[rightindex].visited) //we're not on the right side & can move right
+  { neighborChoices.push_back(1);
   }
-  if(wy < rows-1) //we're not on the bottom row
-  {
-    if(!blockList[downindex].visited)
-    {  neighborChoices.push_back(2);
-    }
+  if(wy < rows-1  &&  !blockList[downindex].visited) //we're not on the bottom row & can move down
+  {  neighborChoices.push_back(2);
   }
-  if(ex > 0)  //we're not on the left side
-  {
-    if(!blockList[leftindex].visited)
-    {  neighborChoices.push_back(3);
-    }
+  if(ex > 0  &&  !blockList[leftindex].visited)  //we're not on the left side & can move left
+  { neighborChoices.push_back(3);
   }
 
   if(!neighborChoices.empty())
   {
-    byte neighborChoiceChosen = neighborChoices[random(neighborChoices.size())];
-    switch(neighborChoiceChosen)
+    switch(neighborChoices[random(neighborChoices.size())])   //choose among the viable neighbor movement options
     {
       case 0:   //up
         blockList[currentPos].north = 0;  //if there is an available path to the north, kill the north wall
-        blockList[upindex].south = 0; //and also mark the cell above as not having a south wall anymore
-        currentPos = upindex; //then push the top of the stack the northern neighbor's coordinates
+        blockList[upindex].south = 0;     //and also mark the cell above as not having a south wall anymore
+        currentPos = upindex;             //then push the top of the stack the northern neighbor's coordinates
         break;
       case 1:   //right
-        blockList[currentPos].east = 0; //if there is an available path to the east, kill the east wall
-        blockList[rightindex].west = 0; //and also mark the cell to the right as not having a west wall anymore
-        currentPos = rightindex;  //then push the top of the stack the eastern neighbor's coordinates
+        blockList[currentPos].east = 0;   //if there is an available path to the east, kill the east wall
+        blockList[rightindex].west = 0;   //and also mark the cell to the right as not having a west wall anymore
+        currentPos = rightindex;          //then push the top of the stack the eastern neighbor's coordinates
         break;
       case 2:   //down
         blockList[currentPos].south = 0;  //if there is an available path to the south, kill the south wall
-        blockList[downindex].north = 0; //and also mark the cell below as not having a north wall anymore
-        currentPos = downindex; //then push the top of the stack the southern neighbor's coordinates
+        blockList[downindex].north = 0;   //and also mark the cell below as not having a north wall anymore
+        currentPos = downindex;           //then push the top of the stack the southern neighbor's coordinates
         break;  
       case 3:   //left 
-        blockList[currentPos].west = 0; //if there is an available path to the west, kill the west wall
-        blockList[leftindex].east = 0;  //and also mark the cell to the left as not having an east wall anymore            
-        currentPos = leftindex; //then push the top of the stack the western neighbor's coordinates
+        blockList[currentPos].west = 0;   //if there is an available path to the west, kill the west wall
+        blockList[leftindex].east = 0;    //and also mark the cell to the left as not having an east wall anymore            
+        currentPos = leftindex;           //then push the top of the stack the western neighbor's coordinates
         break;  
-
     }
     totalVisits++;
     mazeStack.push(currentPos);
