@@ -84,6 +84,9 @@ void populate_vector()
   while(!blockList.empty())
   {  blockList.pop_back();     //this is hacky but shut up. easy way to let me reuse it
   }
+  while(!mazeStack.empty())
+  {  mazeStack.pop();          //avoid those memory leaks boo
+  }
   totalVisits = 1;
   //currentPos = 0;   //removing this reset starts the new maze where the old one left off. how fun
   for(int j = 0; j < rows; j++)
