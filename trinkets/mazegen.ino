@@ -2,9 +2,11 @@
 // maze generator. i'll put it on my oled to test it
 // bgilder
 // 16 july 2022
-// picked back up 9 sept 2022 lol   ////based on a mix of onelonecoder and coding train implementations 
+// picked back up 9 sept 2022 lol   
 ///////////////////////////
 
+////~inspired by~ a mix of onelonecoder and coding train implementations 
+////eventually this could output a formatted structure for briefcase maze modules but that's a problem for later brian
 
 #include <gamebox.h>
 #include <vector>
@@ -37,13 +39,13 @@ int currentPos = 0;  //index in the blocklist
 
 void setup()   
 {
-  oled_setup(SCREEN_ROTATION);
+  oled_setup(SCREEN_ROTATION);    //gamebox
 
   display.print("recursive backtracking maze generator\n\n   bgilder 16july2022, 9sept2022\n\n randomly generates fully connected maze\n\n\n press button for new maze");
   display.display();
 
   while(digitalRead(buttPin))  
-  { //
+  {  delay(1);   //take it easy, bud
   }
   display.clearDisplay();
   display.display();
@@ -68,7 +70,7 @@ void loop()
   draw_position(blockList[currentPos].x,blockList[currentPos].y);
   display.display();
   while(digitalRead(buttPin))
-  {  //
+  {  delay(1);   //no need to burn yourself out while waiting
   }
   display.clearDisplay();
   display.display();
@@ -83,7 +85,7 @@ void populate_vector()
   {  blockList.pop_back();     //this is hacky but shut up. easy way to let me reuse it
   }
   totalVisits = 1;
-  //currentPos = 0;   //by removing this reset we'll start the new maze where the old one left off. how fun
+  //currentPos = 0;   //removing this reset starts the new maze where the old one left off. how fun
   for(int j = 0; j < rows; j++)
   {
     for(int i = 0; i < cols; i++)
@@ -97,7 +99,7 @@ void populate_vector()
       newBoy.west = 1;
       newBoy.visited = 0;
       blockList.push_back(newBoy);
-      draw_position(i,j);  //generates index of current position in vector
+      draw_position(i,j);
     }
   }
   display.display();
@@ -133,22 +135,22 @@ void neighbors(int ex, int wy)
       case 0:   //up
         blockList[currentPos].north = 0;  //if there is an available path to the north, kill the north wall
         blockList[upindex].south = 0;     //and also mark the cell above as not having a south wall anymore
-        currentPos = upindex;             //then push the top of the stack the northern neighbor's coordinates
+        currentPos = upindex;             //then push to the top of the stack the northern neighbor's coordinates
         break;
       case 1:   //right
         blockList[currentPos].east = 0;   //if there is an available path to the east, kill the east wall
         blockList[rightindex].west = 0;   //and also mark the cell to the right as not having a west wall anymore
-        currentPos = rightindex;          //then push the top of the stack the eastern neighbor's coordinates
+        currentPos = rightindex;          //then push to the top of the stack the eastern neighbor's coordinates
         break;
       case 2:   //down
         blockList[currentPos].south = 0;  //if there is an available path to the south, kill the south wall
         blockList[downindex].north = 0;   //and also mark the cell below as not having a north wall anymore
-        currentPos = downindex;           //then push the top of the stack the southern neighbor's coordinates
+        currentPos = downindex;           //then push to the top of the stack the southern neighbor's coordinates
         break;  
       case 3:   //left 
         blockList[currentPos].west = 0;   //if there is an available path to the west, kill the west wall
         blockList[leftindex].east = 0;    //and also mark the cell to the left as not having an east wall anymore            
-        currentPos = leftindex;           //then push the top of the stack the western neighbor's coordinates
+        currentPos = leftindex;           //then push to the top of the stack the western neighbor's coordinates
         break;  
     }
     totalVisits++;
@@ -160,8 +162,8 @@ void neighbors(int ex, int wy)
     currentPos = mazeStack.top();
     mazeStack.pop();
   }
-  display.fillRect(blockList[currentPos].x*blockSize+1,blockList[currentPos].y*blockSize+1,blockSize-1,blockSize-1,GRAY_5);   //show where the current position is, as a treat
-  display.display();
+  display.fillRect(blockList[currentPos].x*blockSize+1,blockList[currentPos].y*blockSize+1,blockSize-1,blockSize-1,GRAY_5);   
+  display.display();    //show where the current position is, as a treat
   delay(drawDelay);
 }
 
@@ -171,18 +173,18 @@ void draw_position(int _x, int _y)
       int index = _x + _y*cols;
       int xApparent = _x*blockSize;
       int yApparent = _y*blockSize;
-      display.drawRect(xApparent,yApparent,blockSize+1,blockSize+1,GRAY_1);
+      display.drawRect(xApparent,yApparent,blockSize+1,blockSize+1,GRAY_1);   //remove old drawn walls
       if(blockList[index].north)
-      { display.drawLine(xApparent,yApparent,xApparent+blockSize,yApparent,GRAY_4);                     //draw north wall
+      { display.drawLine(xApparent,yApparent,xApparent+blockSize,yApparent,GRAY_4);                     //never
       }
       if(blockList[index].east)
-      { display.drawLine(xApparent+blockSize,yApparent,xApparent+blockSize,yApparent+blockSize,GRAY_3); //draw east wall
+      { display.drawLine(xApparent+blockSize,yApparent,xApparent+blockSize,yApparent+blockSize,GRAY_3); //eat
       }
       if(blockList[index].south)
-      { display.drawLine(xApparent+blockSize,yApparent+blockSize,xApparent,yApparent+blockSize,GRAY_4); //draw south wall
+      { display.drawLine(xApparent+blockSize,yApparent+blockSize,xApparent,yApparent+blockSize,GRAY_4); //shredded
       }
       if(blockList[index].west)
-      { display.drawLine(xApparent,yApparent+blockSize,xApparent,yApparent,GRAY_3);                     //draw west wall
+      { display.drawLine(xApparent,yApparent+blockSize,xApparent,yApparent,GRAY_3);                     //wheat
       }
       if(blockList[index].visited)
       { display.fillRect(xApparent+1,yApparent+1,blockSize-1,blockSize-1,GRAY_1);
