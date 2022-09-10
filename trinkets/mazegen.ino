@@ -2,21 +2,19 @@
 // maze generator. i'll put it on my oled to test it
 // bgilder
 // 16 july 2022
-// picked back up 9 sept 2022 lol
+// picked back up 9 sept 2022 lol   ////based on a mix of onelonecoder and coding train implementations 
 ///////////////////////////
 
 
-
 #include <gamebox.h>
-#include <bits/stdc++.h>
-  using namespace std;
+#include <vector>
+#include <stack>
 
 #define SCREEN_ROTATION 0 //0=regular landscape, 1=box turn CC 90* portrait, 2=upside down, 3=box turn CW 90* portrait
 
 
 typedef struct  
 {
-//public:
   int x, y;
   unsigned
     north:1,
@@ -26,73 +24,66 @@ typedef struct
     visited:1;
 } positionboy;
 
-const int blockSize = 8;   //how many pixels square each block will be
-const int rows = (SCREEN_HEIGHT) / blockSize;
-const int cols = (SCREEN_WIDTH) / blockSize;
-long totalVisits = 0;
-
-
 std::vector<positionboy> blockList;  //will arduino allow me to do vector stack shenanigans? we'll see
 std::stack<int> mazeStack;
 
+const int blockSize = 8;   //how many pixels square each block will be
+const int rows = (SCREEN_HEIGHT) / blockSize;
+const int cols = (SCREEN_WIDTH) / blockSize;
+const int drawDelay = 25;
+int totalVisits = 0;
 int currentPos = 0;  //dude you fool just use this to store the index of the blocklist
-
-
-
-
 
 
 void setup()   
 {
   oled_setup(SCREEN_ROTATION);
 
-  display.print("maze generator algo   bgilder 16jul2022\n\n  randomly generates fully connected maze\n\n press button for new maze");
+  display.print("recursive backtracking maze generator\n\n   bgilder 16july2022, 9sept2022\n\n randomly generates fully connected maze\n\n\n press button for new maze");
   display.display();
 
-
-
   while(digitalRead(buttPin))  
-  {
-      delay(1);
+  { //
   }
   display.clearDisplay();
   display.display();
   randomSeed(millis()%253);
   delay(500);
   populate_vector();
-  blockList[currentPos].visited = 1;
-  totalVisits = 1;
-  //mazeStack.push(currentPos);
 }
 
 
 void loop()
 {
-  while(totalVisits< cols*rows)
+  blockList[currentPos].visited = 1;
+  while(totalVisits < cols*rows)
   {
     int uno = blockList[currentPos].x;
     int dos = blockList[currentPos].y;
-    draw_position(uno,dos);
     neighbors(uno,dos);
-
-    display.display();
-    delay(10);
+    draw_position(uno,dos);
   }
-
-
+  display.display();
+  delay(1000);
+  draw_position(blockList[currentPos].x,blockList[currentPos].y);
+  display.display();
   while(digitalRead(buttPin))
-  {
-    //
+  {  //
   }
   display.clearDisplay();
   display.display();
   delay(500);
-  //populate_vector();
+  populate_vector();
 }
 
 
 void populate_vector()
 {
+  while(!blockList.empty())
+  {  blockList.pop_back();     //this is hacky but shut up. easy way to let me reuse it
+  }
+  totalVisits = 1;
+  //currentPos = 0;   //by removing this reset we'll start the new maze where the old one left off. how fun
   for(int j = 0; j < rows; j++)
   {
     for(int i = 0; i < cols; i++)
@@ -109,88 +100,85 @@ void populate_vector()
       draw_position(i,j);  //generates index of current position in vector
     }
   }
-display.display();
+  display.display();
 }
 
-void neighbors(int i, int j)
+
+void neighbors(int ex, int wy)
 {
   std::vector<int> neighborChoices;
-  int upindex = i + (j-1)*cols;
-  int rightindex = (i+1) + j*cols;
-  int downindex = i + (j+1)*cols;
-  int leftindex = (i-1) + j*cols;
-  
-  if(j > 0)  //we're not on the top row
+    
+  int upindex = ex + (wy-1)*cols;
+  int rightindex = (ex+1) + wy*cols;
+  int downindex = ex + (wy+1)*cols;
+  int leftindex = (ex-1) + wy*cols;
+
+  if(wy > 0)  //we're not on the top row
   {
     if(!blockList[upindex].visited)
-      neighborChoices.push_back(0);
+    {  neighborChoices.push_back(0);
+    }
   }
-  if(i < cols-1) //we're on the right side
+  if(ex < cols-1) //we're not on the right side
   {
     if(!blockList[rightindex].visited)
-      neighborChoices.push_back(1);
+    {  neighborChoices.push_back(1);
+    }
   }
-  if(j < rows-1)
+  if(wy < rows-1) //we're not on the bottom row
   {
     if(!blockList[downindex].visited)
-      neighborChoices.push_back(2);
+    {  neighborChoices.push_back(2);
+    }
   }
-  if(i > 0)
+  if(ex > 0)  //we're not on the left side
   {
-    if(!blockList[leftindex].visited);
-      neighborChoices.push_back(3);  
+    if(!blockList[leftindex].visited)
+    {  neighborChoices.push_back(3);
+    }
   }
 
   if(!neighborChoices.empty())
   {
-    byte neighborChoiceChosen = neighborChoices[random(neighborChoices.size()+1)];
-    blockList[currentPos].visited = 1;
+    byte neighborChoiceChosen = neighborChoices[random(neighborChoices.size())];
     switch(neighborChoiceChosen)
     {
       case 0:   //up
-            //if there is an available path to the north, make north the thing we do (meaning kill the wall, i think) (remember to use blocklist instead of up)
-        blockList[currentPos].north = 0;
-            //and also mark the cell above as having a path to the south (ditto)
-        blockList[upindex].south = 0;
-            //then push the top of the stack the northern neighbor's coordinates
-        currentPos = upindex;
+        blockList[currentPos].north = 0;  //if there is an available path to the north, kill the north wall
+        blockList[upindex].south = 0; //and also mark the cell above as not having a south wall anymore
+        currentPos = upindex; //then push the top of the stack the northern neighbor's coordinates
         break;
       case 1:   //right
-            //if there is an available path to the east, make east the thing we do
-        blockList[currentPos].east = 0;
-            //and also mark the cell to the right as having a path to the west
-        blockList[rightindex].west = 0;
-            //then push the top of the stack the northern neighbor's coordinates
-        currentPos = rightindex;
+        blockList[currentPos].east = 0; //if there is an available path to the east, kill the east wall
+        blockList[rightindex].west = 0; //and also mark the cell to the right as not having a west wall anymore
+        currentPos = rightindex;  //then push the top of the stack the eastern neighbor's coordinates
         break;
       case 2:   //down
-            //if there is an available path to the south, make south the thing we do
-        blockList[currentPos].south = 0;
-            //and also mark the cell below as having a path to the north
-        blockList[downindex].north = 0;
-            //then push the top of the stack the northern neighbor's coordinates
-        currentPos = downindex;
+        blockList[currentPos].south = 0;  //if there is an available path to the south, kill the south wall
+        blockList[downindex].north = 0; //and also mark the cell below as not having a north wall anymore
+        currentPos = downindex; //then push the top of the stack the southern neighbor's coordinates
         break;  
-      case 3:   //left
-            //if there is an available path to the west, make west the thing we do
-        blockList[currentPos].west = 0;
-            //and also mark the cell to the left as having a path to the east
-        blockList[leftindex].east = 0;
-            //then push the top of the stack the northern neighbor's coordinates
-        currentPos = leftindex;
+      case 3:   //left 
+        blockList[currentPos].west = 0; //if there is an available path to the west, kill the west wall
+        blockList[leftindex].east = 0;  //and also mark the cell to the left as not having an east wall anymore            
+        currentPos = leftindex; //then push the top of the stack the western neighbor's coordinates
         break;  
+
     }
     totalVisits++;
     mazeStack.push(currentPos);
+    blockList[currentPos].visited = 1;
   }
-  else
-  {
-        //pop off the stack to backtrack
+  else  
+  {     //pop off the stack to backtrack
+    currentPos = mazeStack.top();
     mazeStack.pop();
   }
-
-  
+  display.fillRect(blockList[currentPos].x*blockSize+1,blockList[currentPos].y*blockSize+1,blockSize-1,blockSize-1,GRAY_5);   //show where the current position is, as a treat
+  display.display();
+  delay(drawDelay);
 }
+
 
 void draw_position(int _x, int _y)
 {
