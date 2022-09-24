@@ -193,3 +193,28 @@ void draw_position(int _x, int _y)
       { display.fillRect(xApparent+1,yApparent+1,blockSize-1,blockSize-1,GRAY_1); //after the walls are drawn, show where we've been
       }
 }
+
+/*    //another option using optimized adafuit gfx functions
+void draw_position_fast(int _x, int _y)
+{
+      int index = _x + _y*cols;
+      int xApparent = _x*blockSize;
+      int yApparent = _y*blockSize;
+      display.drawRect(xApparent,yApparent,blockSize+1,blockSize+1,GRAY_1);   //remove old drawn walls
+      if(blockList[index].north)
+      { display.drawFastHLine(xApparent,yApparent,blockSize,GRAY_4);                     //never
+      }
+      if(blockList[index].east)
+      { display.drawFastVLine(xApparent+blockSize,yApparent,blockSize,GRAY_3); //eat
+      }
+      if(blockList[index].south)
+      { display.drawFastHLine(xApparent,yApparent+blockSize,blockSize,GRAY_4); //shredded
+      }
+      if(blockList[index].west)
+      { display.drawFastVLine(xApparent,yApparent,blockSize,GRAY_3);                     //wheat
+      }
+      if(blockList[index].visited)
+      { display.fillRect(xApparent+1,yApparent+1,blockSize-1,blockSize-1,GRAY_1); //after the walls are drawn, show where we've been
+      }
+}
+*/
