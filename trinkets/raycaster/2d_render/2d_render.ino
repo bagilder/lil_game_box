@@ -28,15 +28,15 @@ const int bottomEdge = (SCREEN_HEIGHT-1)/ blockSize;
 const int topEdge = 0;
 
 float frameRate;
-int frameRefreshCount = 0;
+byte frameRefreshCount = 0;
 
 float pHeading = 0;   //an angle, center of player's vield of view
 float pVelX = 0;
 float pVelY = 0;
 float pSpeed = 0;   //player's movement i guess?
 float pVel = 0;
-float pX = rightEdge/2;
-float pY = bottomEdge/2;
+float pX = rightEdge/2;		//player position in x
+float pY = bottomEdge/2;	//player position in y
 unsigned long tPrevFrame, tCurrentFrame, frameTime;
 
 std::vector<int> wallVectorX;
@@ -106,7 +106,7 @@ void random_walls()
 
 void cast_rays()
 {
-
+	
 }
 
 void render_frame()
