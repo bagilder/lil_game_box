@@ -74,9 +74,6 @@ void setup()
 
 randomSeed(millis());
 
-
-
-
 }
 
 void loop()
@@ -121,7 +118,7 @@ void random_walls()
   for(int y =  topEdge; y<bottomEdge - topEdge; y++)   //trying to future proof if i move the window arrangement around
   {
     for(int x = leftEdge; x < rightEdge - leftEdge; x++)
-    {  mapArray[x-leftEdge][y-topEdge] = (customGetPixel(x,y)!=0)?1:0;  //yes this sucks and yes i have to put my own dang getpixel function in but whatever
+    {  mapArray[x-leftEdge][y-topEdge] = (display.getPixel(SCREEN_WIDTH-x,SCREEN_HEIGHT-y)!=0)?1:0;  //yes this sucks and yes i have to put my own dang getpixel function in but whatever
     }
   }
 }
@@ -130,7 +127,8 @@ void cast_rays()
 {
   //this is using a DDA implementation from https://lodev.org/cgtutor/raycasting.html
   //Digital Differential Analysis
-
+display.setCursor(leftEdge,0);
+display.setTextWrap(true);
   for(int xCols = 0; xCols < viewWidth; xCols++)
   {
         //calculate ray position and direction
@@ -199,34 +197,62 @@ void cast_rays()
         //jump to next map square, either in x-direction, or in y-direction
         if(rayStepDistX < rayStepDistY)
         {
-          rayStepDistX += deltaDistX;	//if x traversal is shorter, move in x direction
+          rayStepDistX += deltaDistX;  //if x traversal is shorter, move in x direction
           pMapX += stepX;
           side = 0;
         }
         else
         {
-          rayStepDistY += deltaDistY;	//if y traversal is shorter, move in y direction
+          rayStepDistY += deltaDistY; //if y traversal is shorter, move in y direction
           pMapY += stepY;
           side = 1;
         }
         //Check if ray has hit a wall
-        if(mapArray[pMapX][pMapY] > 0) hit = 1;
+        if(mapArray[pMapX][pMapY] != 0) 
+          hit = 1;
       }
 
+
+      float destinationX, destinationY;  
 
       //Calculate distance projected on camera direction (Euclidean distance would give fisheye effect!)
       if(side == 0) 
       {
-      	perpWallDist = (rayStepDistX - deltaDistX);
-       display.drawLine(pX,pY,rayStepDistX,rayStepDistY-deltaDistY, GRAY_1);
+        perpWallDist = (rayStepDistX - deltaDistX);
+       //display.drawLine(pX,pY,rayStepDistX,rayStepDistY-deltaDistY, GRAY_1);
       }
       else          
       {
-      	perpWallDist = (rayStepDistY - deltaDistY);
+        perpWallDist = (rayStepDistY - deltaDistY);
       }
 
-      
-      display.drawLine(pX,pY,pX+rayStepDistX,pY+rayStepDistY, GRAY_1);
+
+        float destAngle =  tan((xCols-(viewWidth/2))/perpWallDist);
+        float hypoteneuse = sqrt((xCols)*(xCols) + perpWallDist*perpWallDist);
+
+        destinationX = pHeadingX+rayDirX*(hypoteneuse);
+        destinationY = pHeadingY+rayDirY*(hypoteneuse);
+
+      destinationX += pX;
+			destinationY += pY;
+     /* if(pHeading>0 && pHeading <=PI/2)
+      {
+       	destinationX = pX+destinationX;
+        destinationY = pY-destinationY;
+      }
+      if(pHeading>PI/2 && pHeading<=PI)
+      {
+      	destinationX = pX-destinationX;
+        destinationY = pY-destinationY;
+      }
+      if(pHeading>PI && pHeading < 3*PI/2)
+      {
+        destinationX = pX-destinationX;
+				destinationY = pY+destinationY;
+			}*/
+
+      display.drawLine(pX,pY,destinationX,destinationY, GRAY_1);
+
       
 
   }
@@ -298,7 +324,7 @@ void player_movement()
     pHeading += turnSpeed;  
     if(pHeading >= PI*2)
       pHeading = 0;
-         	float oldPlaneX = cPlaneX;
+          float oldPlaneX = cPlaneX;
       cPlaneX = cPlaneX * cos(-turnSpeed) - cPlaneY * sin(-turnSpeed);
       cPlaneY = oldPlaneX * sin(-turnSpeed) + cPlaneY * cos(-turnSpeed);
     flag.CWflag = 0;
