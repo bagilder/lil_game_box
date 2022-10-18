@@ -5,8 +5,11 @@
 ///////////////////////////
 
 
-// currently, 2d raycasting with intersecting lines equation.
+// currently, 2d raycasting with intersecting lines equation. need line segment end points for this method
 // will build up 3d view before worrying about map interaction
+
+//fisheye corrected. clipping distance goes black, haven't tried making that look better yet.
+//still no collision detection 
 
 
 #include <gamebox.h>
@@ -99,21 +102,67 @@ void random_walls()
 
 void cast_rays()
 {
-
   int column = 1; //1-indexed to offset from view boundary 
-  for(float go = pHeading-FOVhalf; go < pHeading+FOVhalf; go += verticalSlice)
+  for(float go = pHeading-FOVhalf; go < pHeading+FOVhalf; go += verticalSlice)  //cone of visionnnnn
   {
     float rDirX = cos(go);
     float rDirY = sin(go);
     float rIntX = pX;
     float rIntY = pY;
-    float check = check_walls(rDirX,rDirY,&rIntX,&rIntY); 
-    if(check > 0 && check < drawDistance)
+    //float check = check_walls(rDirX,rDirY,&rIntX,&rIntY); 
+
+
+    ////and now check the walls
+    float closest = drawDistance;//for z-culling. hacky, but if it works....
+    float x3 = pX; //player point
+    float y3 = pY;
+    float x4 = pX + rDirX;  //ray beginning at player position and a segment pointing in the ray's direction vector 
+    float y4 = pY + rDirY;  
+    
+    // line-line intersect formula (thanks wikipedia)
+    // if 0<t<1 
+    // and u>0, ((note, not 0<u<1, since we are imagining the ray as an infinite line and not a segment. we only care what is "in front" of us, i.e. when the "segment" is positive)) 
+    // then we have an intersection
+        
+    //// does the ray intersect a wall in the first place?
+    for(int i = 0; i < 2*numWalls; i+=2)    //start point, end point, start point, end point, color (i think??)
+    { 
+      float rIntXtemp = rightEdge; //listen we're just trying to get bounds glitches out of here okay
+      float rIntYtemp = bottomEdge;
+      float x1 = wallVectorX[i]; //wall start point
+      float y1 = wallVectorY[i]; 
+      float x2 = wallVectorX[i+1]; //wall end point
+      float y2 = wallVectorY[i+1];
+          
+      float denom = (x1-x2)*(y3-y4) - (y1-y2)*(x3-x4);
+      if (denom != 0)
+      {
+        float t = ((x1-x3)*(y3-y4) - (y1-y3)*(x3-x4))/denom;
+        float u = -((x1-x2)*(y1-y3) - (y1-y2)*(x1-x3))/denom;
+            
+        //// if yes what is that point?
+        if(u>0 && t>0 && t<1) 
+        {  
+          rIntXtemp = x1 + t*(x2-x1);
+          rIntYtemp = y1 + t*(y2-y1);
+        }
+        
+        float distance = sqrt((rIntXtemp-pX)*(rIntXtemp-pX) + (rIntYtemp-pY)*(rIntYtemp-pY)); //do some z-culling
+        if(distance<closest && rIntYtemp<bottomEdge && rIntXtemp<rightEdge && rIntXtemp>leftEdge && rIntYtemp>topEdge)   //the stupidest bounds checking
+        {
+          closest = distance;
+          rIntX=rIntXtemp;
+          rIntY=rIntYtemp;
+        }
+      }
+    }
+
+    if(closest > 0 && closest < drawDistance) //if we can see walls
     {  
       display.drawLine(pX,pY,rIntX,rIntY, GRAY_1);  //actually draw the ray
       
       //and now draw some "3d" walls?????? oh boy!
-      int colHeight = viewHeight/(check*cos(pHeading - go));  //cos gives projection correction instead of euclidian distance. byebye fisheye
+      int colHeight = viewHeight/(closest*cos(pHeading - go));  //cos gives projection correction instead of euclidian distance. byebye fisheye
       if(colHeight > viewHeight)
       {  colHeight = viewHeight;  //seriously trippy glitches when we clip thru walls otherwise
       }
@@ -161,64 +210,13 @@ void cast_rays()
       display.drawFastVLine(rightEdge+column, viewHeight/2 + colHeight/2 ,viewHeight/2 - colHeight/2 + 1, GRAY_1);  //floor different color than ceiling
       display.drawFastVLine(rightEdge+column, viewHeight/2 - colHeight/2, colHeight, tempColor); ///this will have to change if we add textures
     }
-    else
+    else  //no walls in our view
     {
       display.drawFastVLine(rightEdge+column, viewHeight/2, viewHeight/2+1, GRAY_1);
     // display.drawPixel(rightEdge+column,viewHeight/2,GRAY_BLACK); //some vanishing point fakery
     }
     column++;
   }
-}
-
-
-float check_walls(float rDirX, float rDirY, float * rIntX, float * rIntY)
-{
-
-  float closest = drawDistance;//for z-culling. hacky, but if it works....
-
-  float x3 = pX; //player point
-  float y3 = pY;
-  float x4 = pX + rDirX;  //ray beginning at player position and a segment pointing in the ray's direction vector 
-  float y4 = pY + rDirY;  
-  
-  // line-line intersect formula (thanks wikipedia)
-  // if 0<t<1 
-  // and u>0, ((note, not 0<u<1, since we are imagining the ray as an infinite line and not a segment)) 
-  // then we have an intersect 
-      
-  //// does the ray intersect a wall in the first place?
-  for(int i = 0; i < 2*numWalls; i+=2)    //start point, end point, start point, end point, color (i think??)
-  { 
-    float rIntXtemp = rightEdge; //listen we're just trying to get bounds glitches out of here okay
-    float rIntYtemp = bottomEdge;
-    float x1 = wallVectorX[i]; //wall start point
-    float y1 = wallVectorY[i]; 
-    float x2 = wallVectorX[i+1]; //wall end point
-    float y2 = wallVectorY[i+1];
-        
-    float denom = (x1-x2)*(y3-y4) - (y1-y2)*(x3-x4);
-    if (denom != 0)
-    {
-      float t = ((x1-x3)*(y3-y4) - (y1-y3)*(x3-x4))/denom;
-      float u = -((x1-x2)*(y1-y3) - (y1-y2)*(x1-x3))/denom;
-          
-      //// if yes what is that point?
-      if(u>0 && t>0 && t<1) 
-      {  
-        rIntXtemp = x1 + t*(x2-x1);
-        rIntYtemp = y1 + t*(y2-y1);
-      }
-      
-      float distance = sqrt((rIntXtemp-pX)*(rIntXtemp-pX) + (rIntYtemp-pY)*(rIntYtemp-pY)); //do some z-culling
-      if(distance<closest && rIntYtemp<bottomEdge && rIntXtemp<rightEdge && rIntXtemp>leftEdge && rIntYtemp>topEdge)   //the stupidest bounds checking
-      {
-        closest = distance;
-        *rIntX=rIntXtemp;
-        *rIntY=rIntYtemp;
-      }
-    }
-  }
-  return closest;       
 }
 
 
@@ -258,7 +256,6 @@ void frame_rate()
 void player_movement()
 {
   ///first, let's figure out one-knob movement
-
   #ifdef ENCODERLIBRARY
   check_encoder();  //update rotational encoder flags
   #endif
