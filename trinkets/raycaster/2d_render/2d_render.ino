@@ -27,6 +27,7 @@ const int leftEdge = 0;
 const int bottomEdge = (SCREEN_HEIGHT-1)/ blockSize;
 const int topEdge = 0;
 const int viewWidth = SCREEN_WIDTH-1 - rightEdge;   //these will have to change if we swap window orientations
+const float verticalSlice = 2*FOVhalf/viewWidth;
 
 float frameRate;
 byte frameRefreshCount = 0;
@@ -68,13 +69,11 @@ void setup()
 randomSeed(millis());
 
 
-
-
 }
 
 void loop()
 {
- // random_walls();
+  random_walls();
   delay(1000);
   tCurrentFrame = millis();
   while(digitalRead(buttPin))  
@@ -108,84 +107,80 @@ void random_walls()
 void cast_rays()
 {
 
- for(float go = pHeading - FOVhalf; go<pHeading+FOVhalf; go += 2*FOVhalf/viewWidth)
- {
+  for(float go = pHeading-FOVhalf; go < pHeading+FOVhalf; go += verticalSlice)
+  {
     float rDirX = cos(go);
     float rDirY = sin(go);
-    float rIntX,rIntY;
-  float x1 = rightEdge; //wall start point
-  float y1 = SCREEN_HEIGHT-1; 
-  float x2 = rightEdge; //wall end point
-  float y2 = 0; 
-  float x3 = pX; //player point
-  float y3 = pY;
-  float x4 = pX + rDirX;  //ray beginning at player position and a segment pointing in the ray's direction vector 
-  float y4 = pY + rDirY;  
-
-  float denom = (x1-x2)*(y3-y4) - (y1-y2)*(x3-x4);
-  
-  if (denom == 0) 
-  {  denom = 1e30 ; //NULL;
-  }
-  else
-  {
-  float t = ((x1-x3)*(y3-y4) - (y1-y3)*(x3-x4))/denom;
-  float u = -((x1-x2)*(y1-y3) - (y1-y2)*(x1-x3))/denom;
-  
-  //// if yes what is that point?
-  if(u>0 && t>0 && t<1) 
-  {  
-    rIntX = x1 + t*(x2-x1);
-    rIntY = y1 + t*(y2-y1);
-    display.drawLine((int)pX,(int)pY,(int)rIntX,(int)rIntY, GRAY_1);
-  }
-  }
-  
-
+    float rIntX = pX;
+    float rIntY = pY;
+    if(check_walls(rDirX,rDirY,&rIntX,&rIntY))
+    {  display.drawLine(pX,pY,rIntX,rIntY, GRAY_1);  //actually draw the ray
+    }
   }
   
 }
 
-/*
-float check_wall()
+bool check_walls(float rDirX, float rDirY, float * rIntX, float * rIntY)
 {
+
+  float closest = 5000;//for z-culling. hacky, but if it works....
+
   //// does the ray intersect a wall in the first place??
     // line-line intersect formula (thanks wikipedia)
     // if 0<t<1 
     // and u>0, ((note, not 0<u<1, since we are imagining the ray as an infinite line and not a segment)) 
     // then we have an intersect 
-  
-  int x1 = ; //wall start point
-  int y1 = ; 
-  int x2 = ; //wall end point
-  int y2 = ; 
-  int x3 = pX; //player point
-  int y3 = pY;
-  int x4 = pX + rDirX;  //ray beginning at player position and a segment pointing in the ray's direction vector 
-  int y4 = pY + rDirY;  
 
-  float denom = (x1-x2)*(y3-y4) - (y1-y2)*(x3-x4);
-  if (demon == 0) 
-  {  return ; //NULL;
-  }
-  float t = ((x1-x3)*(y3-y4) - (y1-y3)*(x3-x4))/denom;
-  float u = (-1*(x1-x2)*(y1-y3) - (y1-y2)*(x1-x3))/denom;
-  
-  //// if yes what is that point?
-  if(u>0 && t>0 && t<1) 
-  {  
-    rIntX = x1 + t*(x2-x1);
-    rIntY = y1 + t*(y2-y1);
-  }
-  else 
-    return;
+      float x3 = pX; //player point
+      float y3 = pY;
+      float x4 = pX + rDirX;  //ray beginning at player position and a segment pointing in the ray's direction vector 
+      float y4 = pY + rDirY;  
+      
+    for(int i = 0; i < 2*numWalls; i+=2)    //start point, end point, start point, end point, color (i think??)
+    { 
+     
+      float rIntXtemp = rightEdge; //listen we're just trying to get bounds glitches out of here okay
+      float rIntYtemp = bottomEdge;
 
+      float x1 = wallVectorX[i]; //wall start point
+      float y1 = wallVectorY[i]; 
+      float x2 = wallVectorX[i+1]; //wall end point
+      float y2 = wallVectorY[i+1];
+      
 
   
-
-
+      float denom = (x1-x2)*(y3-y4) - (y1-y2)*(x3-x4);
+      
+      if (denom == 0) 
+      {  return false; //NULL;
+      }
+      else
+      {
+        float t = ((x1-x3)*(y3-y4) - (y1-y3)*(x3-x4))/denom;
+        float u = -((x1-x2)*(y1-y3) - (y1-y2)*(x1-x3))/denom;
+        
+        //// if yes what is that point?
+        if(u>0 && t>0 && t<1) 
+        {  
+          rIntXtemp = x1 + t*(x2-x1);
+          rIntYtemp = y1 + t*(y2-y1);
+        }
+        
+        float distance = sqrt((rIntXtemp-pX)*(rIntXtemp-pX) + (rIntYtemp-pY)*(rIntYtemp-pY)); //do some z-culling
+        if(distance<closest && rIntYtemp<bottomEdge && rIntXtemp<rightEdge && rIntXtemp>leftEdge && rIntYtemp>topEdge)   //the stupidest bounds checking
+        {
+          closest = distance;
+          *rIntX=rIntXtemp;
+          *rIntY=rIntYtemp;
+        }
+      }
+    }
+    if(closest<5000)
+      return true;
+    else
+      return false;
+        
 }
-*/
 
 void render_frame()
 {
@@ -196,9 +191,10 @@ void render_frame()
   
   tCurrentFrame = millis();
   frameTime = tCurrentFrame - tPrevFrame;
- /* for(int i = 0; i < 2*numWalls; i+=2)    //start point, end point, start point, end point, color (i think??)
+  for(int i = 0; i < 2*numWalls; i+=2)    //start point, end point, start point, end point, color (i think??)
   { display.drawLine(wallVectorX[i],wallVectorY[i],wallVectorX[i+1],wallVectorY[i+1], GRAY_WHITE);
-  }*/
+  //cast_rays(wallVectorX[i],wallVectorY[i],wallVectorX[i+1],wallVectorY[i+1]);
+  }
   cast_rays();
   display.drawLine(pX,pY,pX+5*cos(pHeading),pY+5*sin(pHeading), GRAY_3);
   display.drawPixel(pX,pY, GRAY_WHITE);
