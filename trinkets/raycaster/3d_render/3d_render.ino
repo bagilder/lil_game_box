@@ -1,7 +1,7 @@
 ///////////////////////////
 // fuck it let's try a raycasting engine
 // bgilder
-// 23 sept 2022  
+// 23 sept 2022, 17 oct 2022
 ///////////////////////////
 
 
@@ -15,7 +15,7 @@
 
 #define SCREEN_ROTATION 0 //0=regular landscape, 1=box turn CC 90* portrait, 2=upside down, 3=box turn CW 90* portrait
 
-const float FOVhalf = radians(45);  //half of the player's total field of view in (radians), to save a single devision lol will be heading+this and heading-this (edge wrapped)
+const float FOVhalf = radians(30);  //half of the player's total field of view in (radians), to save a single devision lol will be heading+this and heading-this (edge wrapped)
 const float maxVel = .025;  //full run speed. we're just guessing to start
 const float turnSpeed = PI/32;  //degrees. how far we tick in a direction on encoder blip. might have to change if converting everything to floats
 const byte numWalls = 5;
@@ -23,14 +23,14 @@ const float maxSpeed = .1;
 const byte deceleration = 2*maxSpeed;
 const byte blockSize = 1;
 //const int rightEdge = (SCREEN_WIDTH-1)/ blockSize;
-const int rightEdge = (SCREEN_WIDTH-1)/ 2;
+const int rightEdge = (SCREEN_WIDTH-1)/ 4;
 const int leftEdge = 0;
 const int bottomEdge = (SCREEN_HEIGHT-1)/ blockSize;
 const int topEdge = 0;
 const int viewWidth = SCREEN_WIDTH-1 - rightEdge;   //these will have to change if we swap window orientations
 const int viewHeight = SCREEN_HEIGHT-1; //would need to change for different orientations 
 const float verticalSlice = 2*FOVhalf/viewWidth;
-const int drawDistance = 5000;
+const int drawDistance = SCREEN_WIDTH/8;  //pretty arbitrary tbh but this generally matches what shows up in 3d
 
 float frameRate;
 byte frameRefreshCount = 0;
@@ -51,27 +51,17 @@ std::vector<int> wallVectorY;
 void setup()   
 {
   oled_setup(SCREEN_ROTATION);    //gamebox
-/*  //this is in random_walls now
-  while(!wallVectorX.empty())   //i know this is super extremely unnecessary but let my brain do its own paranoia stuff ok
-  { wallVectorX.pop_back();
-  }
-  while(!wallVectorY.empty())
-  { wallVectorY.pop_back();
-  }
-*/
-  display.print("raycasting demo on the game box\n\nbgilder 23 sept 2022\n\n\nwhy on gods green earth did i decide to\nbuild this from scratch");
+
+  display.print("raycasting demo on the game box\n\nbgilder 23 sept 2022, 17 oct 2022\n\n\nwhy on gods green earth did i decide to\nbuild this from scratch");
   display.display();
   
-
   while(digitalRead(buttPin))  
   {  delay(1);   //take it easy, bud
   }
   display.clearDisplay();
   display.display();
 
-randomSeed(millis());
-
-
+  randomSeed(millis());
 }
 
 void loop()
@@ -80,14 +70,13 @@ void loop()
   delay(1000);
   tCurrentFrame = millis();
   while(digitalRead(buttPin))  
-  {  delay(10);   //take it easy, bud
-      player_movement();
-        render_frame();
+  {  
+    //delay(10);   //take it easy, bud
+    player_movement();
+    render_frame();
   }
   pX = rightEdge/2;
   pY = bottomEdge/2;
-  
-
 }
 
 
@@ -107,6 +96,7 @@ void random_walls()
   }
 }
 
+
 void cast_rays()
 {
 
@@ -121,16 +111,16 @@ void cast_rays()
     if(check > 0 && check < drawDistance)
     {  
       display.drawLine(pX,pY,rIntX,rIntY, GRAY_1);  //actually draw the ray
+      
       //and now draw some "3d" walls?????? oh boy!
-
-      int drawHeight = map(check, 0, viewHeight, 0, viewHeight);
-      //int perpDist = sqrt(abs(check*check - ( column-(viewWidth/2))*(column-(viewWidth/2))));
-      int colHeight = viewHeight/check;//perpDist;
+      int colHeight = viewHeight/(check*cos(pHeading - go));  //cos gives projection correction instead of euclidian distance. byebye fisheye
+      if(colHeight > viewHeight)
+      {  colHeight = viewHeight;  //seriously trippy glitches when we clip thru walls otherwise
+      }
       
       // map the different distances onto different shades of gray
-
-      int tempColor = map( colHeight, 0, viewHeight, 0,8);
-
+      byte tempColor = map( colHeight, 0, viewHeight, 1,16);   //16 colors isn't as distinct, but it still looks a bit better than just my 8 colors //reserving black for ceiling
+      /*
       switch (tempColor)
       {
         case 0:
@@ -161,40 +151,42 @@ void cast_rays()
         case 8:
           tempColor = GRAY_WHITE;
           break;
-          default:
-                    tempColor = GRAY_WHITE;
+        default:
+          tempColor = GRAY_WHITE;
           break;
       }
-      display.drawFastVLine(rightEdge+column, 0, viewHeight-1, GRAY_1);
+      */
+      //display.drawFastVLine(rightEdge+column, 0, viewHeight-1, GRAY_1);  //floor and ceiling same color
+      //display.drawFastVLine(rightEdge+column, 0, viewHeight/2 - colHeight/2, GRAY_2);
+      display.drawFastVLine(rightEdge+column, viewHeight/2 + colHeight/2 ,viewHeight/2 - colHeight/2 + 1, GRAY_1);  //floor different color than ceiling
       display.drawFastVLine(rightEdge+column, viewHeight/2 - colHeight/2, colHeight, tempColor); ///this will have to change if we add textures
-      column++;
     }
     else
     {
-     display.drawFastVLine(rightEdge+column, 0, viewHeight-1, GRAY_1);
-     display.drawPixel(rightEdge+column,viewHeight/2,GRAY_BLACK);
-     column++;
+      display.drawFastVLine(rightEdge+column, viewHeight/2, viewHeight/2+1, GRAY_1);
+    // display.drawPixel(rightEdge+column,viewHeight/2,GRAY_BLACK); //some vanishing point fakery
     }
+    column++;
   }
-  
 }
+
 
 float check_walls(float rDirX, float rDirY, float * rIntX, float * rIntY)
 {
 
   float closest = drawDistance;//for z-culling. hacky, but if it works....
 
-  //// does the ray intersect a wall in the first place??
-    // line-line intersect formula (thanks wikipedia)
-    // if 0<t<1 
-    // and u>0, ((note, not 0<u<1, since we are imagining the ray as an infinite line and not a segment)) 
-    // then we have an intersect 
-
   float x3 = pX; //player point
   float y3 = pY;
   float x4 = pX + rDirX;  //ray beginning at player position and a segment pointing in the ray's direction vector 
   float y4 = pY + rDirY;  
+  
+  // line-line intersect formula (thanks wikipedia)
+  // if 0<t<1 
+  // and u>0, ((note, not 0<u<1, since we are imagining the ray as an infinite line and not a segment)) 
+  // then we have an intersect 
       
+  //// does the ray intersect a wall in the first place?
   for(int i = 0; i < 2*numWalls; i+=2)    //start point, end point, start point, end point, color (i think??)
   { 
     float rIntXtemp = rightEdge; //listen we're just trying to get bounds glitches out of here okay
@@ -205,7 +197,6 @@ float check_walls(float rDirX, float rDirY, float * rIntX, float * rIntY)
     float y2 = wallVectorY[i+1];
         
     float denom = (x1-x2)*(y3-y4) - (y1-y2)*(x3-x4);
-        
     if (denom != 0)
     {
       float t = ((x1-x3)*(y3-y4) - (y1-y3)*(x3-x4))/denom;
@@ -230,30 +221,29 @@ float check_walls(float rDirX, float rDirY, float * rIntX, float * rIntY)
   return closest;       
 }
 
+
 void render_frame()
 {
-
   frame_rate();
-
-  display.drawFastVLine(rightEdge, topEdge, bottomEdge, GRAY_WHITE);  //halfway boundary
-  
+  display.drawFastVLine(rightEdge, topEdge, bottomEdge, GRAY_WHITE);  //halfway boundary //(x coordinate, start point y, length, color)
   tCurrentFrame = millis();
   frameTime = tCurrentFrame - tPrevFrame;
-  for(int i = 0; i < 2*numWalls; i+=2)    //start point, end point, start point, end point, color (i think??)
-  { display.drawLine(wallVectorX[i],wallVectorY[i],wallVectorX[i+1],wallVectorY[i+1], GRAY_WHITE);
-  //cast_rays(wallVectorX[i],wallVectorY[i],wallVectorX[i+1],wallVectorY[i+1]);
+  for(int i = 0; i < 2*numWalls; i+=2)    //(start point x, start point y, end point x, end point y, color)
+  { 
+    display.drawLine(wallVectorX[i],wallVectorY[i],wallVectorX[i+1],wallVectorY[i+1], GRAY_WHITE);
+  //  cast_rays(wallVectorX[i],wallVectorY[i],wallVectorX[i+1],wallVectorY[i+1]);
   }
   cast_rays();
-  display.drawLine(pX,pY,pX+5*cos(pHeading),pY+5*sin(pHeading), GRAY_3);
+  display.drawLine(pX,pY,pX+2*cos(pHeading),pY+2*sin(pHeading), GRAY_3);
   display.drawPixel(pX,pY, GRAY_WHITE);
   display.display();
   display.clearDisplay();
   tPrevFrame = tCurrentFrame;
 }
 
+
 void frame_rate()
 {
- 
   if(++frameRefreshCount > 5)
   {
     frameRate = 1000/frameTime;
@@ -263,6 +253,7 @@ void frame_rate()
   display.setCursor(0,0);
   display.print(frameRate);
 }
+
 
 void player_movement()
 {
@@ -314,5 +305,4 @@ void player_movement()
     pY = bottomEdge -1;
   else if(pY <= topEdge)
     pY = topEdge+1;
-  
 }
