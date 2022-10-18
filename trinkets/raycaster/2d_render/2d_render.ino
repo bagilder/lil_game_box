@@ -14,7 +14,7 @@
 
 #define SCREEN_ROTATION 0 //0=regular landscape, 1=box turn CC 90* portrait, 2=upside down, 3=box turn CW 90* portrait
 
-const byte FOVhalf = 35;  //half of the player's total field of view in degrees, to save a single devision lol will be heading+this and heading-this (edge wrapped)
+const float FOVhalf = radians(35);  //half of the player's total field of view in (radians), to save a single devision lol will be heading+this and heading-this (edge wrapped)
 const float maxVel = .25;  //full run speed. we're just guessing to start
 const float turnSpeed = PI/32;  //degrees. how far we tick in a direction on encoder blip. might have to change if converting everything to floats
 const byte numWalls = 5;
@@ -26,17 +26,18 @@ const int rightEdge = (SCREEN_WIDTH-1)/ 2;
 const int leftEdge = 0;
 const int bottomEdge = (SCREEN_HEIGHT-1)/ blockSize;
 const int topEdge = 0;
+const int viewWidth = SCREEN_WIDTH-1 - rightEdge;   //these will have to change if we swap window orientations
 
 float frameRate;
 byte frameRefreshCount = 0;
 
-float pHeading = 0;   //an angle, center of player's vield of view
+float pHeading = 0;   //an angle, center of player's vield of view (radians, i believe)
 float pVelX = 0;
 float pVelY = 0;
 float pSpeed = 0;   //player's movement i guess?
 float pVel = 0;
-float pX = rightEdge/2;		//player position in x
-float pY = bottomEdge/2;	//player position in y
+float pX = rightEdge/2;    //player position in x
+float pY = bottomEdge/2;  //player position in y
 unsigned long tPrevFrame, tCurrentFrame, frameTime;
 
 std::vector<int> wallVectorX;
@@ -73,7 +74,7 @@ randomSeed(millis());
 
 void loop()
 {
-  random_walls();
+ // random_walls();
   delay(1000);
   tCurrentFrame = millis();
   while(digitalRead(buttPin))  
@@ -106,8 +107,85 @@ void random_walls()
 
 void cast_rays()
 {
-	
+
+ for(float go = pHeading - FOVhalf; go<pHeading+FOVhalf; go += 2*FOVhalf/viewWidth)
+ {
+    float rDirX = cos(go);
+    float rDirY = sin(go);
+    float rIntX,rIntY;
+  float x1 = rightEdge; //wall start point
+  float y1 = SCREEN_HEIGHT-1; 
+  float x2 = rightEdge; //wall end point
+  float y2 = 0; 
+  float x3 = pX; //player point
+  float y3 = pY;
+  float x4 = pX + rDirX;  //ray beginning at player position and a segment pointing in the ray's direction vector 
+  float y4 = pY + rDirY;  
+
+  float denom = (x1-x2)*(y3-y4) - (y1-y2)*(x3-x4);
+  
+  if (denom == 0) 
+  {  denom = 1e30 ; //NULL;
+  }
+  else
+  {
+  float t = ((x1-x3)*(y3-y4) - (y1-y3)*(x3-x4))/denom;
+  float u = -((x1-x2)*(y1-y3) - (y1-y2)*(x1-x3))/denom;
+  
+  //// if yes what is that point?
+  if(u>0 && t>0 && t<1) 
+  {  
+    rIntX = x1 + t*(x2-x1);
+    rIntY = y1 + t*(y2-y1);
+    display.drawLine((int)pX,(int)pY,(int)rIntX,(int)rIntY, GRAY_1);
+  }
+  }
+  
+
+  }
+  
 }
+
+/*
+float check_wall()
+{
+  //// does the ray intersect a wall in the first place??
+    // line-line intersect formula (thanks wikipedia)
+    // if 0<t<1 
+    // and u>0, ((note, not 0<u<1, since we are imagining the ray as an infinite line and not a segment)) 
+    // then we have an intersect 
+  
+  int x1 = ; //wall start point
+  int y1 = ; 
+  int x2 = ; //wall end point
+  int y2 = ; 
+  int x3 = pX; //player point
+  int y3 = pY;
+  int x4 = pX + rDirX;  //ray beginning at player position and a segment pointing in the ray's direction vector 
+  int y4 = pY + rDirY;  
+
+  float denom = (x1-x2)*(y3-y4) - (y1-y2)*(x3-x4);
+  if (demon == 0) 
+  {  return ; //NULL;
+  }
+  float t = ((x1-x3)*(y3-y4) - (y1-y3)*(x3-x4))/denom;
+  float u = (-1*(x1-x2)*(y1-y3) - (y1-y2)*(x1-x3))/denom;
+  
+  //// if yes what is that point?
+  if(u>0 && t>0 && t<1) 
+  {  
+    rIntX = x1 + t*(x2-x1);
+    rIntY = y1 + t*(y2-y1);
+  }
+  else 
+    return;
+
+
+  
+
+
+}
+*/
 
 void render_frame()
 {
@@ -116,11 +194,12 @@ void render_frame()
 
   display.drawFastVLine(rightEdge, topEdge, bottomEdge, GRAY_WHITE);
   
-	tCurrentFrame = millis();
-	frameTime = tCurrentFrame - tPrevFrame;
-  for(int i = 0; i < 2*numWalls; i+=2)    //start point, end point, start point, end point, color (i think??)
+  tCurrentFrame = millis();
+  frameTime = tCurrentFrame - tPrevFrame;
+ /* for(int i = 0; i < 2*numWalls; i+=2)    //start point, end point, start point, end point, color (i think??)
   { display.drawLine(wallVectorX[i],wallVectorY[i],wallVectorX[i+1],wallVectorY[i+1], GRAY_WHITE);
-  }
+  }*/
+  cast_rays();
   display.drawLine(pX,pY,pX+5*cos(pHeading),pY+5*sin(pHeading), GRAY_3);
   display.drawPixel(pX,pY, GRAY_WHITE);
   display.display();
@@ -154,7 +233,7 @@ void player_movement()
     if(++pSpeed > maxSpeed)    //will this sneaky auto increment my variable? i think maybe
     { pSpeed = maxSpeed;
     }
-    pVel += pSpeed / frameTime / blockSize;	//will this give me framerate compensation? framerate = 1/frame time, so.....
+    pVel += pSpeed / frameTime / blockSize; //will this give me framerate compensation? framerate = 1/frame time, so.....
     if(pVel > maxVel)
     {  pVel = maxVel;
     }
@@ -167,7 +246,7 @@ void player_movement()
   }
   else
   {
-  	pSpeed -= deceleration / frameTime;	// tune decel for comfort
+    pSpeed -= deceleration / frameTime; // tune decel for comfort
   }
   if(flag.CWflag)
   {
