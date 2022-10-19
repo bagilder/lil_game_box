@@ -34,9 +34,9 @@ const int viewHeight = SCREEN_HEIGHT-1;// - bottomEdge;
 const int drawDistance = (SCREEN_HEIGHT-1);
 const int mazeWidth = 24;
 const int mazeHeight = 24;
-const int textureHeight = 64;
-const int textureWidth = 64;
-const int numTextures = 5; // the number of textures we have. duh
+const int textureHeight = 16;
+const int textureWidth = 16;
+const int numTextures = 4; // the number of textures we have. duh
 
 const byte mapArray[mazeWidth][mazeHeight]=
 {
