@@ -164,13 +164,6 @@ void setup()
   }
   */
   
-/*    unsigned long tw, th;
-  loadImage(texture[0], tw, th, "pics/redbrick_gray14.png");
-  loadImage(texture[1], tw, th, "pics/greystone_gray14.png");
-  loadImage(texture[2], tw, th, "pics/colorstone_gray14.png");
-  loadImage(texture[3], tw, th, "pics/wood_gray14.png");
-  loadImage(texture[4], tw, th, "pics/eagle_gray14.png");
-*/
   randomSeed(millis());
 }
 
@@ -223,7 +216,6 @@ void cast_rays()
 
     float deltaDistX = (rayDirX == 0) ? 1e30 : abs(1 / rayDirX);
     float deltaDistY = (rayDirY == 0) ? 1e30 : abs(1 / rayDirY);
-
 
     //what direction to step in x or y-direction (either +1 or -1)
     int stepX;
@@ -281,7 +273,6 @@ void cast_rays()
     }
 
     float destinationX, destinationY;  
-    float wallSpot; // figure out where exactly on the wall the ray hit, to figure out x-coord of texture map
 
     //Calculate distance projected on camera direction (Euclidean distance would give fisheye effect!)
     if(side) 
@@ -290,9 +281,9 @@ void cast_rays()
     else          
     {  perpWallDist = (rayStepDistX - deltaDistX);
     }
-    if(perpWallDist > drawDistance)
+    /*if(perpWallDist > drawDistance)
     {  perpWallDist = drawDistance;
-    } 
+    } */
 
     destinationX = pX + pHeadingX+rayDirX*perpWallDist;
     destinationY = pY + pHeadingY+rayDirY*perpWallDist;
@@ -302,7 +293,7 @@ void cast_rays()
       display.drawLine(pX,pY,destinationX,destinationY, GRAY_1);  //actually draw the ray
       
       //and now draw some "3d" walls?????? oh boy!
-      int colHeight = viewHeight/perpWallDist;  //cos gives projection correction instead of euclidian distance. byebye fisheye
+       int colHeight = viewHeight/perpWallDist;  //cos gives projection correction instead of euclidian distance. byebye fisheye
 
       if(colHeight > viewHeight)
       {  colHeight = viewHeight;  //seriously trippy glitches when we clip thru walls otherwise
@@ -310,50 +301,9 @@ void cast_rays()
       if(colHeight < 0)
       {  colHeight = 0;
       }
-      int drawEnd = viewHeight/2 + colHeight/2;
-      int drawStart = viewHeight/2 - colHeight/2 + 1;
 
+      textured_walls(xCols,perpWallDist,rayDirX,rayDirY, side, pMapX, pMapY, colHeight);  //for portability's sake
 
-      
-    //// textures!~
-    int textureSpot;
-    if(side)  //i super fucked the readability of these to try and maximize the number of things done in each check. could probably redo this more clearly
-    {
-      wallSpot = pX + perpWallDist * rayDirX;
-      wallSpot -= floor(wallSpot);  //keep fractional portion
-      if(rayDirY < 0) 
-      {  textureSpot = textureWidth - int(wallSpot * float(textureWidth)) - 1;  //texture x coordinate
-      }
-      else
-      {  textureSpot = int(wallSpot * float(textureWidth));
-      }
-    }
-    else
-    {
-      wallSpot = pY + perpWallDist * rayDirY;
-      wallSpot -= floor(wallSpot);  //keep fractional portion
-      if(rayDirX > 0)
-      {  textureSpot = textureWidth - int(wallSpot * float(textureWidth)) - 1;  //texture x coordinate
-      }
-      else
-      {  textureSpot = int(wallSpot * float(textureWidth));
-      }
-    }
-
-
-    byte textureNum = mapArray[pMapX][pMapY] - 1; //to 0 align with textures array
-    //scale texture coordinate per screen pixel??
-    float step = 1.0*textureHeight/colHeight;
-    //starting texture coordinate
-    float texturePos = (drawStart - viewHeight / 2 + colHeight / 2) * step;
-    for(int y = drawEnd; y>drawStart; y--)    //wolfenstein textures are mirrored x & y. this at least flips the y.
-    {
-      // Cast the texture coordinate to integer, and mask with (texHeight - 1) in case of overflow
-      int texY = (int)texturePos & (textureHeight - 1);
-      texturePos += step;
-      byte tempColor = texture[textureNum][textureHeight * texY + textureSpot];
-      display.drawPixel(rightEdge+xCols, y, side ? tempColor : tempColor-2);
-    }
 
       // map the different distances onto different shades of gray
       //byte tempColor = map( colHeight, 0, viewHeight, 2,15);   //16 colors isn't as distinct, but it still looks a bit better than just my 8 //reserving ceiling & floor colors
@@ -387,6 +337,56 @@ void bresenham(int x0, int y0, int x1, int y1)
     if (e2 < dy) { err += dx; y0 += sy; }
   }
 }*/
+
+void textured_walls(int xCols, float perpWallDist, float rayDirX, float rayDirY, bool side, int pMapX, int pMapY, int colHeight)
+{
+
+    int drawEnd = viewHeight/2 + colHeight/2;
+    int drawStart = viewHeight/2 - colHeight/2 + 1;
+      
+    //// textures!~
+    float wallSpot; // figure out where exactly on the wall the ray hit, to figure out x-coord of texture map
+    int textureSpot;
+    if(side)  //i super fucked the readability of these to try and maximize the number of things done in each check. could probably redo this more clearly
+    {
+      wallSpot = pX + perpWallDist * rayDirX;
+      wallSpot -= floor(wallSpot);  //keep fractional portion
+      if(rayDirY > 0)   //reversed the inequality to flip wolfenstein sprite x-mirroring. flip it back if i fix the sprite orientation
+      {  textureSpot = textureWidth - int(wallSpot * float(textureWidth)) - 1;  //texture x coordinate
+      }
+      else
+      {  textureSpot = int(wallSpot * float(textureWidth));
+      }
+    }
+    else
+    {
+      wallSpot = pY + perpWallDist * rayDirY;
+      wallSpot -= floor(wallSpot);  //keep fractional portion
+      if(rayDirX < 0)   //reversed the inequality to flip wolfenstein sprite x-mirroring. flip it back if i fix the sprite orientation
+      {  textureSpot = textureWidth - int(wallSpot * float(textureWidth)) - 1;  //texture x coordinate
+      }
+      else
+      {  textureSpot = int(wallSpot * float(textureWidth));
+      }
+    }
+
+    byte textureNum = mapArray[pMapX][pMapY] - 1; //to 0 align with textures array
+    //scale texture coordinate per screen pixel??
+    float step = 1.0*textureHeight/colHeight;
+    //starting texture coordinate
+    float texturePos = (drawStart - viewHeight / 2 + colHeight / 2) * step;
+    for(int y = drawEnd; y>drawStart; y--)    //wolfenstein textures are mirrored x & y. this at least flips the y.
+    {
+      // Cast the texture coordinate to integer, and mask with (texHeight - 1) in case of overflow
+      int texY = (int)texturePos & (textureHeight - 1);
+      texturePos += step;
+      byte tempColor = texture[textureNum][textureHeight * texY + textureSpot];
+      if(side)
+      {  tempColor-=2; //to simulate lighting on ns/ew faces. not important
+      }
+      display.drawPixel(rightEdge+xCols, y, tempColor);    //draw the textured column to the screen buffer
+    }
+}
 
 
 void render_frame()
