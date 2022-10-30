@@ -24,21 +24,27 @@
 
 
 #define SCREEN_ROTATION 0 //0=regular landscape, 1=box turn CC 90* portrait, 2=upside down, 3=box turn CW 90* portrait
-
+#define PROJECTILE_SPEED 0.2
+#define RAND_MAX 6
+#define SPRITE_LIMIT 16
 
 struct sObject      //one lone coder sprite implementation
 {
   float x;
   float y;
+  float vx; //item velocity for movement
+  float vy; 
+  bool removed;
+  byte objectType;
   byte *image;
 };
 
 class List {    //atmel not using the std list library smDh
   public:
     byte length;
-    sObject data[16];
+    sObject data[SPRITE_LIMIT];
     void append(sObject item) {
-        if (length < 16) data[length++] = item;
+        if (length < SPRITE_LIMIT) data[length++] = item;
     }
     void remove(byte index) {
         if (index >= length) return;
@@ -50,9 +56,9 @@ class List {    //atmel not using the std list library smDh
 
 List objectList = 
 { .length = 3, .data ={
-  {6.5, 8.5, sprite[0]},
-  {16.5, 16.5, sprite[0]},
-  {10.5, 3.5, sprite[0]}}
+  {6.5, 8.5, 0, 0, false, 0, sprite[0]},
+  {16.5, 16.5, 0, 0, false, 0, sprite[0]},
+  {10.5, 3.5, 0, 0, false, 0, sprite[0]}}
 };
 
 const float FOVhalf = radians(35);  //half of the player's total field of view in degrees, to save a single devision lol will be heading+this and heading-this (edge wrapped)
@@ -135,6 +141,7 @@ void setup()
   while(digitalRead(buttPin))  
   {  delay(1);   //take it easy, bud
   }
+  flag.buttFlag = 0;
   display.clearDisplay();
   display.display();
 
@@ -156,7 +163,7 @@ void setup()
 
 void loop()
 {
-  delay(1000);
+  //delay(1000);
   tCurrentFrame = millis();
   while(digitalRead(buttPin))  
   {  
@@ -166,17 +173,37 @@ void loop()
     player_movement();
     render_frame();
   }
-  pX = leftEdge + 2;
-  pY = topEdge + 2;
 }
 
 
+void fire_bullet() {
+  //a test of projectiles and object list culling
+  sObject o;
+  o.x = pX;
+  o.y = pY;
+  float noise = (random(RAND_MAX)-0.5)*0.1;
+  o.vx = cosf(pHeading + noise)*PROJECTILE_SPEED;
+  o.vy = sinf(pHeading + noise)*PROJECTILE_SPEED;
+  o.image = sprite[1];
+  o.removed = false;
+  o.objectType = 1;
+  objectList.append(o);
+}
+
 void draw_sprites()
 {
+  
   //is the object within the user's FOV?
   for(int each = 0; each < objectList.length; each++)  //for(auto &object : objectList)
   {
     sObject object = objectList.data[each];  //this is so dumb. why doesn't atmel support lists
+
+    //update object physics
+    object.x += object.vx;
+    object.y += object.vy;
+    if(mapArray[(int)object.x][(int)object.y] > 0)
+      object.removed = true;
+    
     float sVecX = object.x - pX;
     float sVecY = object.y - pY;
     float sDist = sqrtf(sVecX*sVecX + sVecY*sVecY);  //pythagoras!
@@ -240,12 +267,17 @@ void draw_sprites()
           {
             byte texel = object.image[spriteWidth * (int)(sSampleY*spriteHeight) + (int)(sSampleX*spriteWidth)]; //sampleX is percentage, need to scale it back up to full texture size
             if(texel && zbuffer[sColumn] >= sDist)
-            { display.drawPixel(sColumn+rightEdge,sToe-sY,texel-3);
+            { 
+              display.drawPixel(sColumn+rightEdge,sToe-sY,texel);
+              zbuffer[sColumn] = sDist;   //breaks transparency at sprite overlap
             }
           }
         }
       }
     }
+    objectList.data[each].x = object.x;
+    objectList.data[each].y = object.y;
+    objectList.data[each].removed = object.removed;
   }
 }
 
@@ -270,6 +302,12 @@ void player_movement()
   #ifdef ENCODERLIBRARY
   check_encoder();  //update rotational encoder flags
   #endif
+
+  if(flag.buttFlag)
+  {
+      fire_bullet();
+      flag.buttFlag = 0;
+  }
 
   if(!digitalRead(encButtPin))
   {
@@ -339,6 +377,7 @@ void render_frame()
 {
   tCurrentFrame = millis();
   frameTime = tCurrentFrame - tPrevFrame;
+  ///display minimap and rays  
   for(int row = 0; row < mazeHeight; row++)
   {
     for(int col = 0; col < mazeWidth; col++)
@@ -346,7 +385,15 @@ void render_frame()
     }
   }
   display.drawLine(pX,pY,pX+3*cosf(pHeading),pY+3*sinf(pHeading), GRAY_3);  //shows player heading, relies on heading being an angle
+  
   ///cast_rays_olc(); //known functional
+
+  //garbage collect sprites
+  for(int each = objectList.length -1; each >= 0 ; each--)  //for(auto &object : objectList)
+  {
+    if(objectList.data[each].removed)   //this is so stupidddd why can't atmel just support lists
+      objectList.remove(each);    //currently there is a bug that erases all sprites later than a sprite that gets removed. changing to each-- didn't fix it
+  }
   cast_rays();
   draw_sprites();
   display.drawPixel(pX,pY, GRAY_WHITE); //player pixel
