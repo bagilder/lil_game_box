@@ -122,6 +122,7 @@ float pY = topEdge+3;  //player position in y
 float cPlaneX = 0;        //camera plane vector in x
 float cPlaneY = .66;     //ditto y
 unsigned long tPrevFrame, tCurrentFrame, frameTime;
+float zbuffer[viewWidth];
 
 
 void setup()   
@@ -238,8 +239,8 @@ void draw_sprites()
           if(sColumn>=0 && sColumn<viewWidth)
           {
             byte texel = object.image[spriteWidth * (int)(sSampleY*spriteHeight) + (int)(sSampleX*spriteWidth)]; //sampleX is percentage, need to scale it back up to full texture size
-            if(texel)
-            { display.drawPixel(sColumn+rightEdge,sToe-sY,texel);
+            if(texel && zbuffer[sColumn] >= sDist)
+            { display.drawPixel(sColumn+rightEdge,sToe-sY,texel-3);
             }
           }
         }
@@ -479,6 +480,9 @@ void cast_rays()
       {  colHeight = 0;
       }
 
+       /// update depth buffer
+
+       zbuffer[xCols] = perpWallDist;
        
      // textured_walls(xCols,perpWallDist,rayDirX,rayDirY, side, pMapX, pMapY, colHeight, destinationX, destinationY);  //for portability's sake
 
@@ -537,7 +541,7 @@ float fSampleX = 0.0;
             float fSampleY = ((float)y - (float)nCeiling) / ((float)nFloor - (float)nCeiling);
                   byte tempColor = texture[textureNum][textureHeight * (int)(fSampleY*textureHeight) + (int)(fSampleX*textureWidth)];
                   if(side)
-                  	tempColor -=2;
+                  	tempColor -= 2;
               display.drawPixel(rightEdge+xCols, viewHeight-y, tempColor);    //draw the textured column to the screen buffer
           }
         }
