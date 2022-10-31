@@ -11,8 +11,8 @@
 // uses digital differential analysis instead of ray marching or line intersection eqns
 // leaning heavily on https://lodev.org/cgtutor/raycasting.html
 
-////incorporates affine texture mapping. and holy shit it actuall works?????
-// perspective gets wonky when you're right up on the walls. might want to look into.. non.. affine mapping
+////properly supersamples wall textures
+//sprite rendering works now, as do projectiles. relies on vectors to store sprite list. vectors cause memory bloat :( oh well
 
 
 
