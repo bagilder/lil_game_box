@@ -72,6 +72,8 @@ typedef struct
     resetFlag:1;   	//if the reset is successful
 } flagfield8;
 
+
+
 #define buttPin 2
 #define encButtPin 3
 #define encApin 4
@@ -109,6 +111,7 @@ extern volatile unsigned long lcanonTimeEncButt;
 #endif
 
 void oled_setup(byte r);
+uint8_t customGetPixel(int16_t x, int16_t y);
 void butt_isr();
 void enc_butt_isr();
 #ifndef ENCODERLIBRARY
@@ -120,6 +123,24 @@ void enc_a_isr3();
 void check_encoder();
 extern Encoder knob;
 #endif
+
+
+template <class ForwardIterator, class UnaryPredicate>
+  ForwardIterator remove_if (ForwardIterator first, ForwardIterator last,
+                             UnaryPredicate pred)
+{
+  ForwardIterator result = first;
+  while (first!=last) {
+    if (!pred(*first)) {
+      if (result!=first)
+        *result = std::move(*first);
+      ++result;
+    }
+    ++first;
+  }
+  return result;
+}
+
 
 
 #endif	//header gamebox

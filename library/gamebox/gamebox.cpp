@@ -93,6 +93,17 @@ nCCtick = 0;
 }
 
 
+uint8_t customGetPixel(int16_t x, int16_t y) {         //take THAT, adafruit 
+  
+  uint8_t * buffer = display.getBuffer();
+  if (x >= 0 && x < SCREEN_WIDTH && y >= 0 && y < SCREEN_HEIGHT) {
+    return ((buffer[x + (y / 8) * SCREEN_WIDTH] & (1 << (y & 7))));// != 0) ? 1 : 0;
+  }
+  return 0xFF; // error
+}
+
+
+
 void butt_isr()
 {  
 	#ifdef SOFTWAREBUTTON
