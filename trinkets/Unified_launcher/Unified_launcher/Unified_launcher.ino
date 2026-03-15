@@ -120,13 +120,16 @@ typedef struct
 std::vector<positionboy> blockList; 
 std::stack<int> mazeStack;
 
-const int stackBlockSize = 8;   //how many pixels square each block will be
-const int rows = (SCREEN_HEIGHT) / blockSize;
-const int cols = (SCREEN_WIDTH) / blockSize;
+const int mazeBlockSize = 8;   //how many pixels square each maze block will be
+const int rows = (SCREEN_HEIGHT) / mazeBlockSize;
+const int cols = (SCREEN_WIDTH) / mazeBlockSize;
 const int drawDelay = 25;
 int totalVisits = 0;
-int currentPos = 0;  //index in the stack blocklist
-
+int currentPos = 0;  //index in the maze blocklist
+uint8_t nUpCount  = 0;  //used for main menu and pong
+uint8_t nDownCount  = 0;
+#define nUpThreshold 2
+#define nDownThreshold 2//used for main menu and pong
 enum gameOption {lifeGame, stackerGame, pongGame, mazeGen, etchGame, raycastGame};
 gameOption c;
 const int NUMTRINKETS = 6;
@@ -166,8 +169,21 @@ void loop()
   check_encoder();  //update rotational encoder flags
   #endif
 
-  if(flag.CCflag)
+  if(flag.CCflag)  //stolen from pong encoder handling but backwards
   {
+    nUpCount++;
+    flag.CCflag = 0;
+  }
+  if(flag.CWflag)  //stolen from pong encoder handling but backwards
+  {
+    nDownCount++;
+    flag.CWflag = 0;
+  }
+
+  if(nUpCount > nUpThreshold+2)  //CC move! stolen from pong encoder handling but extra
+  {
+    nUpCount = 0;
+    nDownCount = 0;
     if((c > 0))
     {
       display.fillRect(0, 8*(c+1), SCREEN_WIDTH, 8, GRAY_BLACK);
@@ -183,8 +199,10 @@ void loop()
     flag.CCflag = 0;
   }
 
-  if(flag.CWflag)
+  if(nDownCount > nDownThreshold+2)  //CW move! stolen from pong encoder handling but extra
   {
+    nUpCount = 0;
+    nDownCount = 0;
     if(c < NUMTRINKETS-1)
     {
       display.fillRect(0, 8*(c+1), SCREEN_WIDTH, 8, GRAY_BLACK);
@@ -813,18 +831,7 @@ void stacker_draw_slab(uint16_t x, uint16_t y, uint8_t num)
 void pong()
 {
 
-oled_setup(0);
-  display.setCursor(0,0);
-  display.write("welcome to pong");
-  display.display();
-  delay(1000);
-
-
   uint8_t nScore = 0;
-  uint8_t nUpCount  = 0;
-  uint8_t nDownCount  = 0;
-  #define nUpThreshold 2
-  #define nDownThreshold 2
   float x = SCREEN_WIDTH/2;
   float xPrev = x;
   float y = SCREEN_HEIGHT/2;
@@ -1117,7 +1124,7 @@ void maze()
         currentPos = mazeStack.top();
         mazeStack.pop();
       }
-      display.fillRect(blockList[currentPos].x*stackBlockSize+1,blockList[currentPos].y*stackBlockSize+1,stackBlockSize-1,stackBlockSize-1,GRAY_5);   
+      display.fillRect(blockList[currentPos].x*mazeBlockSize+1,blockList[currentPos].y*mazeBlockSize+1,mazeBlockSize-1,mazeBlockSize-1,GRAY_5);   
       display.display();    //show where the current position is, as a treat
       delay(drawDelay);
       //// end maze neighbors
@@ -1139,23 +1146,23 @@ void maze()
 void maze_draw_position(int _x, int _y)
 {
   int index = _x + _y*cols;
-  int xApparent = _x*stackBlockSize;
-  int yApparent = _y*stackBlockSize;
-  display.drawRect(xApparent,yApparent,stackBlockSize+1,stackBlockSize+1,GRAY_1);   //remove old drawn walls
+  int xApparent = _x*mazeBlockSize;
+  int yApparent = _y*mazeBlockSize;
+  display.drawRect(xApparent,yApparent,mazeBlockSize+1,mazeBlockSize+1,GRAY_1);   //remove old drawn walls
   if(blockList[index].north)
-  { display.drawLine(xApparent,yApparent,xApparent+stackBlockSize,yApparent,GRAY_4);                     //never
+  { display.drawLine(xApparent,yApparent,xApparent+mazeBlockSize,yApparent,GRAY_4);                     //never
   }
   if(blockList[index].east)
-  { display.drawLine(xApparent+stackBlockSize,yApparent,xApparent+stackBlockSize,yApparent+stackBlockSize,GRAY_3); //eat
+  { display.drawLine(xApparent+mazeBlockSize,yApparent,xApparent+mazeBlockSize,yApparent+mazeBlockSize,GRAY_3); //eat
   }
   if(blockList[index].south)
-  { display.drawLine(xApparent+stackBlockSize,yApparent+stackBlockSize,xApparent,yApparent+stackBlockSize,GRAY_4); //shredded
+  { display.drawLine(xApparent+mazeBlockSize,yApparent+mazeBlockSize,xApparent,yApparent+mazeBlockSize,GRAY_4); //shredded
   }
   if(blockList[index].west)
-  { display.drawLine(xApparent,yApparent+stackBlockSize,xApparent,yApparent,GRAY_3);                     //wheat
+  { display.drawLine(xApparent,yApparent+mazeBlockSize,xApparent,yApparent,GRAY_3);                     //wheat
   }
   if(blockList[index].visited)
-  { display.fillRect(xApparent+1,yApparent+1,stackBlockSize-1,stackBlockSize-1,GRAY_1); //after the walls are drawn, show where we've been
+  { display.fillRect(xApparent+1,yApparent+1,mazeBlockSize-1,mazeBlockSize-1,GRAY_1); //after the walls are drawn, show where we've been
   }
 }
 
