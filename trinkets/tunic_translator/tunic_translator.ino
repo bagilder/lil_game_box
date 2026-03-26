@@ -94,18 +94,18 @@ ow 6              0b000000000100000x
 
 //uint16_t charBuilder = 0;
 uint8_t currentCharacter = 0;
-uint16_t characters[7] = {0,0,0,0,0,0,0};
-int nDownCounter = 0;;
+uint16_t characters[8] = {0,0,0,0,0,0,0,0};
+int nDownCounter = 0;
 int nUpCounter = 0;
 int nDownThreshold = 3;
 int nUpThreshold = 3;
 
-enum alphabet {b,d,f,g,h,j,k,L,m,n,p,r,s,t,v,w,y,z,ch,sh,these,think,ing,zh,
-                eye,ay,uh,claw,hard,hat,who,oh,ee,eh,look,it,oy,ow,reverse};
+enum alphabet {b,d,f,g,h,j,k,L,m,n,p,r,s,t,v,w,y,z,ch,sh,these,think,zh,ing,blank1,
+                eye,ay,uh,claw,hat,hard,who,oh,ee,eh,look,it,oy,ow,blank2};
 alphabet consVar;
 alphabet vowelVar;
-String consonantList[24] = {"B","D","F","G","H","J","K","L","M","N","P","R","S","T","V","W","Y","Z","CH","SH","THese","THink","ING","ZH"};
-String vowelList[14] = {"EYE","AY","UH","clAW","hArd","hAt","whO","OH","EE","EH","lOOk","It","OY","OW"};
+String consonantList[25] = {"B","D","F","G","H","J","K","L","M","N","P","R","S","T","V","W","Y","Z","CH","SH","THese","THink","ZH","ING","[none]"};
+String vowelList[15] = {"EYE","AY","UH","clAW","hAt","hArd","whO","OH","EE","EH","lOOk","It","OY","OW","[none]"};
 
 void setup() 
 {
@@ -115,34 +115,18 @@ void setup()
   flag.encButtFlag = 0;
   flag.CCflag = 0;
   flag.CWflag = 0;
+  consVar = b;
+  vowelVar = eye;
 }
 
 void loop() 
 {
 
-  display.clearDisplay();
-  currentCharacter = 0;
-
-  for(int j = 0; j<16;j++)    //segment test
-  {
-    characters[0] = 0b0000000000000001<<j;
-    drawChars();
-    delay(200);
-  }
-
-  for(int i = 0; i<8; i++)    //character test
-  {
-    currentCharacter = i;
-    characters[i] = 0b1111111001111111;
-    display.drawCircle((30*currentCharacter)+15, 54, 2, GRAY_WHITE); //x, y, r, color
-    //display.drawCircle((30*currentCharacter)+15, 54, 3, GRAY_WHITE); //x, y, r, color
-    drawChars();
-    delay(200);
-  }
-
-  delay(4000);
+//test_routine();
+alphabet_test();
 
 }
+
 
 void select_consonant()
 {
@@ -152,6 +136,8 @@ void select_consonant()
     #ifdef ENCODERLIBRARY
     check_encoder();  //update rotational encoder flags
     #endif
+
+    
 
     if (consVar > ow && nDownCounter > nDownThreshold+2)  //boundaries, folks
     { 
@@ -165,6 +151,14 @@ void select_consonant()
       nUpThreshold = 0;
       nDownThreshold = 0;
       consVar = zh;
+    }
+
+    if (consVar > blank1)  //boundaries, folks     ////i'm sure we could integrate the switches and just keep track of which phoneme type we're on for choosing where our boundaries are
+    { consVar = b;
+    }
+
+    if(consVar < b)  //healthy boundaries
+    { consVar = blank1;
     }
 
     switch(consVar)
@@ -187,143 +181,134 @@ void select_consonant()
       case g:
         characters[currentCharacter] |= 0b1111111110000000;
         characters[currentCharacter] &= 0b1101100001111111;
-
         break;
 
       case h:
         characters[currentCharacter] |= 0b1111111110000000;
         characters[currentCharacter] &= 0b1101010001111111;
-
         break;
 
       case j:
         characters[currentCharacter] |= 0b1111111110000000;
         characters[currentCharacter] &= 0b0011010001111111;
-
         break;
 
       case k:
         characters[currentCharacter] |= 0b1111111110000000;
         characters[currentCharacter] &= 0b1001110001111111;
-
         break;
 
       case L:
         characters[currentCharacter] |= 0b1111111110000000;
         characters[currentCharacter] &= 0b0101010001111111;
-
         break;
 
       case m:
         characters[currentCharacter] |= 0b1111111110000000;
         characters[currentCharacter] &= 0b1010000001111111;
-
         break;
 
       case n:
         characters[currentCharacter] |= 0b1111111110000000;
         characters[currentCharacter] &= 0b1010001001111111;
-
         break;
 
       case p:
         characters[currentCharacter] |= 0b1111111110000000;
         characters[currentCharacter] &= 0b0101100001111111;
-
         break;
 
       case r:
         characters[currentCharacter] |= 0b1111111110000000;
         characters[currentCharacter] &= 0b0101110001111111;
-
         break;
 
       case s:
         characters[currentCharacter] |= 0b1111111110000000;
         characters[currentCharacter] &= 0b0111110001111111;
-
         break;
 
       case t:
         characters[currentCharacter] |= 0b1111111110000000;
-        characters[currentCharacter] &= 0b0101101001111111;
-
+        characters[currentCharacter] &= 0b0101101000111111;
         break;
 
       case v:
         characters[currentCharacter] |= 0b1111111110000000;
         characters[currentCharacter] &= 0b1001011001111111;
-
         break;
 
       case w:
         characters[currentCharacter] |= 0b1111111110000000;
         characters[currentCharacter] &= 0b0000101001111111;
-
         break;
 
       case y:
         characters[currentCharacter] |= 0b1111111110000000;
         characters[currentCharacter] &= 0b0101011001111111;
-
         break;
 
       case z:
         characters[currentCharacter] |= 0b1111111110000000;
         characters[currentCharacter] &= 0b1101011001111111;
-
         break;
 
       case ch:
         characters[currentCharacter] |= 0b1111111110000000;
         characters[currentCharacter] &= 0b0101001001111111;
-      
         break;
         
       case sh:
         characters[currentCharacter] |= 0b1111111110000000;
         characters[currentCharacter] &= 0b1110101001111111;
-      
         break;
         
       case these:
         characters[currentCharacter] |= 0b1111111110000000;
         characters[currentCharacter] &= 0b1111010001111111;
-      
         break;
         
       case think:
         characters[currentCharacter] |= 0b1111111110000000;
         characters[currentCharacter] &= 0b0101111001111111;
-      
-        break;
-        
-      case ing:
-        characters[currentCharacter] |= 0b1111111110000000;
-        characters[currentCharacter] &= 0b1111111001111111;
-      
         break;
         
       case zh:
         characters[currentCharacter] |= 0b1111111110000000;
         characters[currentCharacter] &= 0b1011111001111111;
+        break;
+
+      case ing:
+        characters[currentCharacter] |= 0b1111111110000000;
+        characters[currentCharacter] &= 0b1111111001111111;
+        break;
       
+      case blank1:
+        characters[currentCharacter] |= 0b1111111110000000;
+        characters[currentCharacter] &= 0b0000000001111111;
         break;
 
     }
     drawChars();
   }
+  flag.buttFlag = 0;
+  display.setCursor(0,8);
+  display.println("press");
+  display.display();
+  /*
   if(characters[currentCharacter] & 0b0000000000000001) //if it's reversed, this will be second so let's move to the next position
-  {  currentCharacter++;
+  {
+    display.drawCircle((30*currentCharacter)+15, 54, 2, GRAY_WHITE); //x, y, r, color
+    currentCharacter++;
   }
   else  //otherwise, this will be first
   { select_vowel();
   }
-  if(currentCharacter > 7)
+  if(currentCharacter > 8)
   {
     display.clearDisplay();
     currentCharacter = 0;
-  }
+  }*/
 }
 
 
@@ -338,12 +323,12 @@ void select_vowel()
 
 
 
-    if (vowelVar > ow)  //boundaries, folks     ////i'm sure we could integrate the switches and just keep track of which phoneme type we're on for choosing where our boundaries are
+    if (vowelVar > blank2)  //boundaries, folks     ////i'm sure we could integrate the switches and just keep track of which phoneme type we're on for choosing where our boundaries are
     { vowelVar = eye;
     }
 
     if(vowelVar < eye)  //healthy boundaries
-    { vowelVar = ow;
+    { vowelVar = blank2;
     }
 
     switch(vowelVar)
@@ -351,101 +336,93 @@ void select_vowel()
       case eye:
         characters[currentCharacter] |= 0b0000000001111110;
         characters[currentCharacter] &= 0b1111111100000011;
-
         break;
         
       case ay:
         characters[currentCharacter] |= 0b0000000001111110;
         characters[currentCharacter] &= 0b1111111100000101;
-      
         break;
         
       case uh:
         characters[currentCharacter] |= 0b0000000001111110;
         characters[currentCharacter] &= 0b1111111100000111;
-      
         break;
         
       case claw:
         characters[currentCharacter] |= 0b0000000001111110;
         characters[currentCharacter] &= 0b1111111100011101;
-      
-        break;
-        
-      case hard:
-        characters[currentCharacter] |= 0b0000000001111110;
-        characters[currentCharacter] &= 0b1111111100011001;
-      
         break;
         
       case hat:
         characters[currentCharacter] |= 0b0000000001111110;
         characters[currentCharacter] &= 0b1111111100011111;
-      
         break;
-        
+
+      case hard:
+        characters[currentCharacter] |= 0b0000000001111110;
+        characters[currentCharacter] &= 0b1111111100011001;
+        break;
+
       case who:
         characters[currentCharacter] |= 0b0000000001111110;
         characters[currentCharacter] &= 0b1111111100111111;
-      
         break;
         
       case oh:
         characters[currentCharacter] |= 0b0000000001111110;
         characters[currentCharacter] &= 0b1111111101111111;
-      
         break;
         
       case ee:
         characters[currentCharacter] |= 0b0000000001111110;
         characters[currentCharacter] &= 0b1111111101111101;
-      
         break;
         
       case eh:
         characters[currentCharacter] |= 0b0000000001111110;
         characters[currentCharacter] &= 0b1111111101111001;
-      
         break;
         
       case look:
         characters[currentCharacter] |= 0b0000000001111110;
         characters[currentCharacter] &= 0b1111111100111001;
-      
         break;
         
       case it:
         characters[currentCharacter] |= 0b0000000001111110;
         characters[currentCharacter] &= 0b1111111101100001;
-      
         break;
         
       case oy:
         characters[currentCharacter] |= 0b0000000001111110;
         characters[currentCharacter] &= 0b1111111100100001;
-      
         break;
         
       case ow:
         characters[currentCharacter] |= 0b0000000001111110;
         characters[currentCharacter] &= 0b1111111101000001;
-      
         break;
-  
+
+      case blank2:
+        characters[currentCharacter] |= 0b0000000001111110;
+        characters[currentCharacter] &= 0b1111111100000001;
+        break;  
+
     }
     drawChars();
   }
-  if(characters[currentCharacter] & 0b0000000000000001) //if it's reversed, this will be first
+  flag.buttFlag = 0;
+  /*if(characters[currentCharacter] & 0b0000000000000001) //if it's reversed, this will be first
   {  select_consonant();
   }
   else  //otherwise, this will be second so let's move to the next position
   { currentCharacter++;
   }
-  if(currentCharacter > 7)
+  if(currentCharacter > 8)
   {
     display.clearDisplay();
     currentCharacter = 0;
-  }
+  }*/
 }
 
 void selectReverse()
@@ -463,6 +440,7 @@ void selectReverse()
     {  characters[currentCharacter] = 0b0000000000000001;
     }
   }
+  flag.buttFlag = 0;
 }
 
 void drawChars()  //this feels pretty inelegant and brute force but let's do it 
@@ -545,3 +523,44 @@ void drawChars()  //this feels pretty inelegant and brute force but let's do it
   display.display();
 
 }
+
+
+void test_routine()
+{
+  display.clearDisplay();
+  currentCharacter = 0;
+
+  for(int j = 0; j<16;j++)    //segment test
+  {
+    characters[0] = 0b0000000000000001<<j;
+    drawChars();
+    delay(200);
+  }
+
+  for(int i = 0; i<8; i++)    //character test
+  {
+    currentCharacter = i;
+    characters[i] = 0b1111111001111111;
+    display.drawCircle((30*currentCharacter)+15, 54, 2, GRAY_WHITE); //x, y, r, color
+    //display.drawCircle((30*currentCharacter)+15, 54, 3, GRAY_WHITE); //x, y, r, color
+    drawChars();
+    delay(200);
+  }
+
+  delay(4000);
+}
+
+
+void alphabet_test()
+{
+    select_vowel();
+  display.clearDisplay();
+    display.setCursor(32,8);
+  display.println("incrementing");
+  display.display();
+  vowelVar = vowelVar + 1;
+
+}
+
+
+
