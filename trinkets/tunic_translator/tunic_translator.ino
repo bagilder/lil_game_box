@@ -91,7 +91,7 @@ ow 6              0b000000000100000x
 
 //uint16_t charBuilder = 0;
 uint8_t currentCharacter = 0;
-uint16_t characters[8] = {0b0101101000000000,0b0101110000011110,0b1010001000000000,0b1101011000000000,0b0101010000000100,0b1110101000000110,0b1010001000000000,0};
+uint16_t characters[8] = {0x5a00,0x5c1e,0xa200,0xd600,0x5404,0xea06,0xa200,0};  //"translation" for splashscreen
 int nDownCounter = 0;
 int nUpCounter = 0;
 int nDownThreshold = 3;
