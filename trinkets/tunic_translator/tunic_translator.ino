@@ -94,17 +94,17 @@ uint8_t currentCharacter = 0;
 uint16_t characters[8] = {0x5a00,0x5c1e,0xa200,0xd600,0x5404,0xea06,0xa200,0};  //"translation" for splashscreen
 int nDownCounter = 0;
 int nUpCounter = 0;
-int nDownThreshold = 3;
-int nUpThreshold = 3;
+#define nDownThreshold 2
+#define nUpThreshold 2
 
-enum alphabet {b,d,f,g,h,j,k,L,m,n,p,r,s,t,v,w,y,z,ch,sh,these,think,zh,ing,blank1,
+enum alphabet {BBB,DDD,FFF,GGG,HHH,JJJ,KKK,LLL,MMM,NNN,PPP,RRR,SSS,TTT,VVV,WWW,YYY,ZZZ,ch,sh,these,think,zh,ing,blank1,
                 ay,uh,aw,hat,hard,ee,eh,look,eye,ih,shoo,oh,oy,ow,blank2,normal,invert};
 alphabet alphaVar;
 String characterList[42] = {"  B","  D","  F","  G","  H","  J","  K","  L","  M","  N","  P","  R","  S","  T","  V","  W","  Y","  Z",
                             " CH"," SH","(TH)ESE","(TH)INK"," ZH"," ING","[none]",
                             " AY"," UH"," AW","H(A)T","H(A)RD"," EE"," EH","L(OO)K"," EYE"," IH","SH(OO)"," OH"," OY"," OW","[none]","normal","invert"};
 
-#define CONS_START b
+#define CONS_START BBB
 #define CONS_END blank1
 #define VOWEL_START ay
 #define VOWEL_END blank2
@@ -170,14 +170,14 @@ void select_inversion()
       nUpCounter++;
       flag.CCflag = 0;
     }
-    if (nDownCounter > nDownThreshold+2)
+    if (nDownCounter > nDownThreshold+3)
     { 
       nUpCounter = 0;
       nDownCounter = 0;
       characters[currentCharacter] = 0b0000000000000001; //yes inverted, vowel first
       alphaVar = invert;
     }
-    else if(nUpCounter > nUpThreshold+2)
+    else if(nUpCounter > nUpThreshold+3)
     { 
       nUpCounter = 0;
       nDownCounter = 0;
@@ -214,13 +214,13 @@ void select_consonant()
       nUpCounter++;
       flag.CWflag = 0;
     }
-    if (nUpCounter > nUpThreshold+2)  //boundaries, folks
+    if (nUpCounter > nUpThreshold+3)  //boundaries, folks
     { 
       nUpCounter = 0;
       nDownCounter = 0;
       alphaVar = alphaVar+1;
     }
-    if(nDownCounter > nDownThreshold+2)  //healthy boundaries
+    if(nDownCounter > nDownThreshold+3)  //healthy boundaries
     { 
       nUpCounter = 0;
       nDownCounter = 0;
@@ -238,92 +238,92 @@ void select_consonant()
 
     switch(alphaVar)
     {
-      case b:
+      case BBB:
         characters[currentCharacter] |= 0b1111111110000000;
         characters[currentCharacter] &= 0b1001010001111111;
         break;
 
-      case d:
+      case DDD:
         characters[currentCharacter] |= 0b1111111110000000;
         characters[currentCharacter] &= 0b1011010001111111;
         break;
 
-      case f:
+      case FFF:
         characters[currentCharacter] |= 0b1111111110000000;
         characters[currentCharacter] &= 0b0111100001111111;
         break;
 
-      case g:
+      case GGG:
         characters[currentCharacter] |= 0b1111111110000000;
         characters[currentCharacter] &= 0b1101100001111111;
         break;
 
-      case h:
+      case HHH:
         characters[currentCharacter] |= 0b1111111110000000;
         characters[currentCharacter] &= 0b1101010001111111;
         break;
 
-      case j:
+      case JJJ:
         characters[currentCharacter] |= 0b1111111110000000;
         characters[currentCharacter] &= 0b0011010001111111;
         break;
 
-      case k:
+      case KKK:
         characters[currentCharacter] |= 0b1111111110000000;
         characters[currentCharacter] &= 0b1001110001111111;
         break;
 
-      case L:
+      case LLL:
         characters[currentCharacter] |= 0b1111111110000000;
         characters[currentCharacter] &= 0b0101010001111111;
         break;
 
-      case m:
+      case MMM:
         characters[currentCharacter] |= 0b1111111110000000;
         characters[currentCharacter] &= 0b1010000001111111;
         break;
 
-      case n:
+      case NNN:
         characters[currentCharacter] |= 0b1111111110000000;
         characters[currentCharacter] &= 0b1010001001111111;
         break;
 
-      case p:
+      case PPP:
         characters[currentCharacter] |= 0b1111111110000000;
         characters[currentCharacter] &= 0b0101100001111111;
         break;
 
-      case r:
+      case RRR:
         characters[currentCharacter] |= 0b1111111110000000;
         characters[currentCharacter] &= 0b0101110001111111;
         break;
 
-      case s:
+      case SSS:
         characters[currentCharacter] |= 0b1111111110000000;
         characters[currentCharacter] &= 0b0111110001111111;
         break;
 
-      case t:
+      case TTT:
         characters[currentCharacter] |= 0b1111111110000000;
         characters[currentCharacter] &= 0b0101101000111111;
         break;
 
-      case v:
+      case VVV:
         characters[currentCharacter] |= 0b1111111110000000;
         characters[currentCharacter] &= 0b1001011001111111;
         break;
 
-      case w:
+      case WWW:
         characters[currentCharacter] |= 0b1111111110000000;
         characters[currentCharacter] &= 0b0000101001111111;
         break;
 
-      case y:
+      case YYY:
         characters[currentCharacter] |= 0b1111111110000000;
         characters[currentCharacter] &= 0b0101011001111111;
         break;
 
-      case z:
+      case ZZZ:
         characters[currentCharacter] |= 0b1111111110000000;
         characters[currentCharacter] &= 0b1101011001111111;
         break;
@@ -372,8 +372,10 @@ void select_consonant()
     if(characters[currentCharacter] < 2)  //if double null, erase the midline. multiple words~!
     {  display.fillRect((30*currentCharacter)+0, 0, 31, SCREEN_WIDTH-1,  GRAY_BLACK); //x0,y0,w,h,color
     }
-    else
-    {  display.drawCircle((30*currentCharacter)+15, 54, 2, GRAY_WHITE); //x, y, r, color
+    else if(characters[currentCharacter] > 255) //there's actually a consonant to read afterwards
+    {  
+      display.drawCircle((30*currentCharacter)+15, 51, 2, GRAY_WHITE); //x, y, r, color
+      display.drawCircle((30*currentCharacter)+15, 51, 3, GRAY_WHITE); //x, y, r, color
     }
     display.display();
     currentCharacter++;
@@ -404,13 +406,13 @@ void select_vowel()
       nUpCounter++;
       flag.CWflag = 0;
     }
-    if (nUpCounter > nUpThreshold+2)  //boundaries, folks
+    if (nUpCounter > nUpThreshold+3)  //boundaries, folks
     { 
       nUpCounter = 0;
       nDownCounter = 0;
       alphaVar = alphaVar+1;
     }
-    if(nDownCounter > nDownThreshold+2)  //healthy boundaries
+    if(nDownCounter > nDownThreshold+3)  //healthy boundaries
     { 
       nUpCounter = 0;
       nDownCounter = 0;
@@ -692,7 +694,7 @@ void ask_continue()
       flag.CWflag = 0;
     }
 
-    if (nDownCounter > nDownThreshold+2)  //boundaries, folks
+    if (nDownCounter > nDownThreshold+3)  //boundaries, folks
     { 
       nUpCounter = 0;
       nDownCounter = 0;  
@@ -700,7 +702,7 @@ void ask_continue()
       display.print("yes");
       discontinuationate = 0;
     }
-    else if(nUpCounter > nUpThreshold+2)  //healthy boundaries
+    else if(nUpCounter > nUpThreshold+3)  //healthy boundaries
     { 
       nUpCounter = 0;
       nDownCounter = 0;
