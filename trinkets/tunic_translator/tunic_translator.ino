@@ -372,7 +372,7 @@ void select_consonant()
     if(characters[currentCharacter] < 2)  //if double null, erase the midline. multiple words~!
     {  display.fillRect((30*currentCharacter)+0, 0, 31, SCREEN_WIDTH-1,  GRAY_BLACK); //x0,y0,w,h,color
     }
-    else if(characters[currentCharacter] > 255) //there's actually a consonant to read afterwards
+    else if((characters[currentCharacter] > 255) && (characters[currentCharacter] & 0b0000000001111110)) //there's actually a consonant-vowel pair
     {  
       display.drawCircle((30*currentCharacter)+15, 51, 2, GRAY_WHITE); //x, y, r, color
       display.drawCircle((30*currentCharacter)+15, 51, 3, GRAY_WHITE); //x, y, r, color
