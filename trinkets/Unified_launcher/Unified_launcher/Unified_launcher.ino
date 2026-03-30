@@ -133,12 +133,13 @@ uint8_t nDownCount  = 0;
 
 uint8_t currentCharacter = 0;
 uint16_t characters[8] = {0x5a00,0x5c1e,0xa200,0xd600,0x5404,0xea06,0xa200,0};  //"translation" for splashscreen
-enum alphabet {BBB,DDD,FFF,GGG,HHH,JJJ,KKK,LLL,MMM,NNN,PPP,RRR,SSS,TTT,VVV,WWW,YYY,ZZZ,ch,sh,these,think,zh,ing,blank1,
-                ay,uh,aw,hat,hard,ee,eh,look,eye,ih,shoo,oh,oy,ow,blank2,normal,invert};
+enum alphabet {BBB,DDD,FFF,GGG,HHH,JJJ,KKK,LLL,MMM,NNN,PPP,RRR,SSS,TTT,VVV,WWW,YYY,ZZZ,ch,sh,these,think,zh,ng,blank1,
+                ay,uh,aw,hat,hard,ee,eh,look,eye,ih,shoo,oh,oy,ow,er,oar,ear,ar,air,blank2,normal,invert};
 alphabet alphaVar;
-String characterList[42] = {"  B","  D","  F","  G","  H","  J","  K","  L","  M","  N","  P","  R","  S","  T","  V","  W","  Y","  Z",
-                            " CH"," SH","(TH)ESE","(TH)INK"," ZH"," ING","[none]",
-                            " AY"," UH"," AW","H(A)T","H(A)RD"," EE"," EH","L(OO)K"," EYE"," IH","SH(OO)"," OH"," OY"," OW","[none]","normal","invert"};
+String characterList[47] = {"  B","  D","  F","  G","  H","  J","  K","  L","  M","  N","  P","  R","  S","  T","  V","  W","  Y","  Z",
+                            " CH"," SH","(TH)ESE","(TH)INK"," ZH"," NG","[none]",
+                            " AY"," UH"," AW","H(A)T","H(A)RD"," EE"," EH","L(OO)K"," EYE"," IH","SH(OO)"," OH"," OY"," OW",
+                            " ER"," OR"," EAR"," AR"," AIR","[none]","normal","invert"};
 #define CONS_START BBB
 #define CONS_END blank1
 #define VOWEL_START ay
@@ -2075,7 +2076,7 @@ void select_consonant()
         characters[currentCharacter] &= 0b1011111001111111;
         break;
 
-      case ing:
+      case ng:
         characters[currentCharacter] |= 0b1111111110000000;
         characters[currentCharacter] &= 0b1111111001111111;
         break;
@@ -2218,6 +2219,31 @@ void select_vowel()
         characters[currentCharacter] |= 0b0000000001111110;
         characters[currentCharacter] &= 0b1111111101000001;
         break;
+
+      case er:
+        characters[currentCharacter] |= 0b0000000001111110;
+        characters[currentCharacter] &= 0b1111111101111011;
+        break;
+
+      case oar:
+        characters[currentCharacter] |= 0b0000000001111110;
+        characters[currentCharacter] &= 0b1111111101011111;
+        break;
+
+      case ear:
+        characters[currentCharacter] |= 0b0000000001111110;
+        characters[currentCharacter] &= 0b1111111101011101;
+        break;
+
+      case ar:
+        characters[currentCharacter] |= 0b0000000001111110;
+        characters[currentCharacter] &= 0b1111111101100111;
+        break;
+
+      case air:
+        characters[currentCharacter] |= 0b0000000001111110;
+        characters[currentCharacter] &= 0b1111111101011001;
+        break;        
 
       case blank2:
         characters[currentCharacter] |= 0b0000000001111110;
