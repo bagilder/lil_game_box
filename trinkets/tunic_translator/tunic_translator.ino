@@ -103,7 +103,7 @@ int nUpCount = 0;
 #define nUpThreshold 2
 
 enum alphabet {BBB,DDD,FFF,GGG,HHH,JJJ,KKK,LLL,MMM,NNN,PPP,RRR,SSS,TTT,VVV,WWW,YYY,ZZZ,ch,sh,these,think,zh,ng,blank1,
-                ay,uh,aw,hat,hard,ee,eh,look,eye,ih,shoo,oh,oy,ow,er,or,ear,ar,air,blank2,normal,invert};
+                ay,uh,aw,hat,hard,ee,eh,look,eye,ih,shoo,oh,oy,ow,er,oar,ear,ar,air,blank2,normal,invert};
 alphabet alphaVar;
 String characterList[47] = {"  B","  D","  F","  G","  H","  J","  K","  L","  M","  N","  P","  R","  S","  T","  V","  W","  Y","  Z",
                             " CH"," SH","(TH)ESE","(TH)INK"," ZH"," NG","[none]",
@@ -508,7 +508,7 @@ void select_vowel()
         characters[currentCharacter] &= 0b1111111101111011;
         break;
 
-      case or:
+      case oar:
         characters[currentCharacter] |= 0b0000000001111110;
         characters[currentCharacter] &= 0b1111111101011111;
         break;
