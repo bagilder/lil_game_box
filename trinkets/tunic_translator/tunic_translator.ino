@@ -84,7 +84,7 @@ ih 5,6            0b000000000110000x
 oy 5              0b000000000010000x
 ow 6              0b000000000100000x
 er 1,3,4,5,6      0b000000000111101x
-or 1,2,3,4,6      0b000000000101111x
+oar 1,2,3,4,6     0b000000000101111x
 ear 2,3,4,6       0b000000000101110x
 ar 1,2,5,6        0b000000000110011x
 air 3,4,6         0b000000000101100x
@@ -97,8 +97,8 @@ air 3,4,6         0b000000000101100x
 //uint16_t charBuilder = 0;
 uint8_t currentCharacter = 0;
 uint16_t characters[8] = {0x5a00,0x5c1e,0xa200,0xd600,0x5404,0xea06,0xa200,0};  //"translation" for splashscreen
-int nDownCounter = 0;
-int nUpCounter = 0;
+int nDownCount = 0;
+int nUpCount = 0;
 #define nDownThreshold 2
 #define nUpThreshold 2
 
@@ -168,25 +168,25 @@ void select_inversion()
     #endif
     if(flag.CWflag)
     {
-      nDownCounter++;
+      nDownCount++;
       flag.CWflag = 0;
     }
     if(flag.CCflag)
     {
-      nUpCounter++;
+      nUpCount++;
       flag.CCflag = 0;
     }
-    if (nDownCounter > nDownThreshold+3)
+    if (nDownCount > nDownThreshold+3)
     { 
-      nUpCounter = 0;
-      nDownCounter = 0;
+      nUpCount = 0;
+      nDownCount = 0;
       characters[currentCharacter] = 0b0000000000000001; //yes inverted, vowel first
       alphaVar = invert;
     }
-    else if(nUpCounter > nUpThreshold+3)
+    else if(nUpCount > nUpThreshold+3)
     { 
-      nUpCounter = 0;
-      nDownCounter = 0;
+      nUpCount = 0;
+      nDownCount = 0;
       characters[currentCharacter] = 0;  //not inverted, cons first
       alphaVar = normal;
     }
@@ -212,24 +212,24 @@ void select_consonant()
     #endif
     if(flag.CCflag)
     {
-      nDownCounter++;
+      nDownCount++;
       flag.CCflag = 0;
     }
     if(flag.CWflag)
     {
-      nUpCounter++;
+      nUpCount++;
       flag.CWflag = 0;
     }
-    if (nUpCounter > nUpThreshold+3)  //boundaries, folks
+    if (nUpCount > nUpThreshold+3)  //boundaries, folks
     { 
-      nUpCounter = 0;
-      nDownCounter = 0;
+      nUpCount = 0;
+      nDownCount = 0;
       alphaVar = alphaVar+1;
     }
-    if(nDownCounter > nDownThreshold+3)  //healthy boundaries
+    if(nDownCount > nDownThreshold+3)  //healthy boundaries
     { 
-      nUpCounter = 0;
-      nDownCounter = 0;
+      nUpCount = 0;
+      nDownCount = 0;
       if(alphaVar == CONS_START)
         alphaVar = CONS_END;
       else
@@ -404,24 +404,24 @@ void select_vowel()
     #endif
     if(flag.CCflag)
     {
-      nDownCounter++;
+      nDownCount++;
       flag.CCflag = 0;
     }
     if(flag.CWflag)
     {
-      nUpCounter++;
+      nUpCount++;
       flag.CWflag = 0;
     }
-    if (nUpCounter > nUpThreshold+3)  //boundaries, folks
+    if (nUpCount > nUpThreshold+3)  //boundaries, folks
     { 
-      nUpCounter = 0;
-      nDownCounter = 0;
+      nUpCount = 0;
+      nDownCount = 0;
       alphaVar = alphaVar+1;
     }
-    if(nDownCounter > nDownThreshold+3)  //healthy boundaries
+    if(nDownCount > nDownThreshold+3)  //healthy boundaries
     { 
-      nUpCounter = 0;
-      nDownCounter = 0;
+      nUpCount = 0;
+      nDownCount = 0;
       alphaVar = alphaVar-1;
     }
     if (alphaVar > VOWEL_END)  //boundaries, folks     ////i'm sure we could integrate the switches and just keep track of which phoneme type we're on for choosing where our boundaries are
@@ -716,27 +716,27 @@ void ask_continue()
 
     if(flag.CCflag)
     {
-      nDownCounter++;
+      nDownCount++;
       flag.CCflag = 0;
     }
     if(flag.CWflag)
     {
-      nUpCounter++;
+      nUpCount++;
       flag.CWflag = 0;
     }
 
-    if (nDownCounter > nDownThreshold+3)  //boundaries, folks
+    if (nDownCount > nDownThreshold+3)  //boundaries, folks
     { 
-      nUpCounter = 0;
-      nDownCounter = 0;  
+      nUpCount = 0;
+      nDownCount = 0;  
       display.setCursor((30*currentCharacter)+5, 38);
       display.print("yes");
       discontinuationate = 0;
     }
-    else if(nUpCounter > nUpThreshold+3)  //healthy boundaries
+    else if(nUpCount > nUpThreshold+3)  //healthy boundaries
     { 
-      nUpCounter = 0;
-      nDownCounter = 0;
+      nUpCount = 0;
+      nDownCount = 0;
       display.setCursor((30*currentCharacter)+5, 38);
       display.print("no  ");
       discontinuationate = 1;
