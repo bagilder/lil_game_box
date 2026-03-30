@@ -5,9 +5,6 @@
 //////////
 
 
-//THE R-CHICKA IS ACTUALLY FIVE NEW DIPHTHONG SHAPES OMGGGG
-
-
 /*********/
 // we're gonna one-hot encode the segments for quick masking at the draw stage.
 // start at outer segments, top right, then counter clockwise to bottom right. 
@@ -25,8 +22,8 @@
 /* 
 seg   start   stop    (note: all 10s changed to 9 and all 38s to 39 to get straight line continuations between characters)
 1     15,0    30,9
-2     0,9    15,0
-3     0,9    0,24
+2     0,9     15,0
+3     0,9     0,24
 4     0,30    0,39
 5     0,39    15,48
 6     15,48   30,39
@@ -94,7 +91,6 @@ air 3,4,6         0b000000000101100x
 #include <gamebox.h>
 //#define CHARACTERTESTMODE 1
 
-//uint16_t charBuilder = 0;
 uint8_t currentCharacter = 0;
 uint16_t characters[8] = {0x5a00,0x5c1e,0xa200,0xd600,0x5404,0xea06,0xa200,0};  //"translation" for splashscreen
 int nDownCount = 0;
@@ -114,6 +110,7 @@ String characterList[47] = {"  B","  D","  F","  G","  H","  J","  K","  L","  M
 #define CONS_END blank1
 #define VOWEL_START ay
 #define VOWEL_END blank2
+
 
 void setup() 
 {
@@ -163,27 +160,15 @@ void select_inversion()
 {
   while(!flag.buttFlag)
   {
-    #ifdef ENCODERLIBRARY
-    check_encoder();  //update rotational encoder flags
-    #endif
-    if(flag.CWflag)
-    {
-      nDownCount++;
-      flag.CWflag = 0;
-    }
-    if(flag.CCflag)
-    {
-      nUpCount++;
-      flag.CCflag = 0;
-    }
-    if (nDownCount > nDownThreshold+3)
+    check_for_twisty();
+    if (nUpCount > nUpThreshold+3)
     { 
       nUpCount = 0;
       nDownCount = 0;
       characters[currentCharacter] = 0b0000000000000001; //yes inverted, vowel first
       alphaVar = invert;
     }
-    else if(nUpCount > nUpThreshold+3)
+    else if(nDownCount > nDownThreshold+3)
     { 
       nUpCount = 0;
       nDownCount = 0;
@@ -193,7 +178,6 @@ void select_inversion()
     draw_chars();
   }
   flag.buttFlag = 0;
-
   if(characters[currentCharacter])  //inverted
   { select_vowel();
   }
@@ -207,19 +191,7 @@ void select_consonant()
 {
   while(!flag.buttFlag)
   {
-    #ifdef ENCODERLIBRARY
-    check_encoder();  //update rotational encoder flags
-    #endif
-    if(flag.CCflag)
-    {
-      nDownCount++;
-      flag.CCflag = 0;
-    }
-    if(flag.CWflag)
-    {
-      nUpCount++;
-      flag.CWflag = 0;
-    }
+    check_for_twisty();
     if (nUpCount > nUpThreshold+3)  //boundaries, folks
     { 
       nUpCount = 0;
@@ -399,26 +371,14 @@ void select_vowel()
 {
   while(!flag.buttFlag)
   {
-    #ifdef ENCODERLIBRARY
-    check_encoder();  //update rotational encoder flags
-    #endif
-    if(flag.CCflag)
-    {
-      nDownCount++;
-      flag.CCflag = 0;
-    }
-    if(flag.CWflag)
-    {
-      nUpCount++;
-      flag.CWflag = 0;
-    }
-    if (nUpCount > nUpThreshold+3)  //boundaries, folks
+    check_for_twisty();
+    if (nUpCount > nUpThreshold+3) 
     { 
       nUpCount = 0;
       nDownCount = 0;
       alphaVar = alphaVar+1;
     }
-    if(nDownCount > nDownThreshold+3)  //healthy boundaries
+    if(nDownCount > nDownThreshold+3)  
     { 
       nUpCount = 0;
       nDownCount = 0;
@@ -586,13 +546,13 @@ void draw_chars()  //this feels pretty inelegant and brute force but let's do it
     display.setTextColor(GRAY_1, GRAY_BLACK);
     display.print("ink");
   }
-  else if (alphaVar == these)
+  else if(alphaVar == these)
   {
     display.print("TH");
     display.setTextColor(GRAY_1, GRAY_BLACK);
     display.print("ese");
   }
-  else if (alphaVar == hat)
+  else if(alphaVar == hat)
   {
     display.setTextColor(GRAY_1, GRAY_BLACK);
     display.print("h");
@@ -601,7 +561,7 @@ void draw_chars()  //this feels pretty inelegant and brute force but let's do it
     display.setTextColor(GRAY_1, GRAY_BLACK);
     display.print("t");
   }
-  else if (alphaVar == hard)
+  else if(alphaVar == hard)
   {
     display.setTextColor(GRAY_1, GRAY_BLACK);
     display.print("h");
@@ -610,7 +570,7 @@ void draw_chars()  //this feels pretty inelegant and brute force but let's do it
     display.setTextColor(GRAY_1, GRAY_BLACK);
     display.print("rd");
   }
-  else if (alphaVar == look)
+  else if(alphaVar == look)
   {
     display.setTextColor(GRAY_1, GRAY_BLACK);
     display.print("L");
@@ -619,7 +579,7 @@ void draw_chars()  //this feels pretty inelegant and brute force but let's do it
     display.setTextColor(GRAY_1, GRAY_BLACK);
     display.print("K");
   }
-  else if (alphaVar == shoo)
+  else if(alphaVar == shoo)
   {
     display.setTextColor(GRAY_1, GRAY_BLACK);
     display.print("sh");
@@ -710,21 +670,7 @@ void ask_continue()
   display.print("yes");
   while(!flag.buttFlag)
   {
-    #ifdef ENCODERLIBRARY
-    check_encoder();  //update rotational encoder flags
-    #endif
-
-    if(flag.CCflag)
-    {
-      nDownCount++;
-      flag.CCflag = 0;
-    }
-    if(flag.CWflag)
-    {
-      nUpCount++;
-      flag.CWflag = 0;
-    }
-
+    check_for_twisty();
     if (nDownCount > nDownThreshold+3)  //boundaries, folks
     { 
       nUpCount = 0;
@@ -751,6 +697,25 @@ void ask_continue()
     end_character_row();
   }
 }
+
+
+void check_for_twisty()
+{
+    #ifdef ENCODERLIBRARY
+    check_encoder();  //update rotational encoder flags
+    #endif
+    if(flag.CCflag)
+    {
+      nDownCount++;
+      flag.CCflag = 0;
+    }
+    if(flag.CWflag)
+    {
+      nUpCount++;
+      flag.CWflag = 0;
+    }
+}
+
 
 #ifdef CHARACTERTESTMODE
 void shape_test_routine()

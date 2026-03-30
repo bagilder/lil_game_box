@@ -247,38 +247,31 @@ void loop()
     switch (c)
     {
       case lifeGame:
-
         life();
       break;
 
       case stackerGame:
-
         oled_setup(3);
         stacker();
       break;
 
       case pongGame:
-
         pong();
       break;
 
       case mazeGen:
-
         maze();
       break;
 
       case etchGame:
-
         etch();
       break;
 
       case raycastGame:
-
         raycaster();
       break;
 
       case translateGame:
-
         translate();
       break;
 
@@ -1871,36 +1864,22 @@ void translate()
     {  ask_continue();
     }
   }
-
 }
-
 
 
 void select_inversion()
 {
   while(!flag.buttFlag)
   {
-    #ifdef ENCODERLIBRARY
-    check_encoder();  //update rotational encoder flags
-    #endif
-    if(flag.CWflag)
-    {
-      nDownCount++;
-      flag.CWflag = 0;
-    }
-    if(flag.CCflag)
-    {
-      nUpCount++;
-      flag.CCflag = 0;
-    }
-    if (nDownCount > nDownThreshold+3)
+    check_for_twisty();
+    if (nUpCount > nUpThreshold+3)
     { 
       nUpCount = 0;
       nDownCount = 0;
       characters[currentCharacter] = 0b0000000000000001; //yes inverted, vowel first
       alphaVar = invert;
     }
-    else if(nUpCount > nUpThreshold+3)
+    else if(nDownCount > nDownThreshold+3)
     { 
       nUpCount = 0;
       nDownCount = 0;
@@ -1910,7 +1889,6 @@ void select_inversion()
     draw_chars();
   }
   flag.buttFlag = 0;
-
   if(characters[currentCharacter])  //inverted
   { select_vowel();
   }
@@ -1924,19 +1902,7 @@ void select_consonant()
 {
   while(!flag.buttFlag)
   {
-    #ifdef ENCODERLIBRARY
-    check_encoder();  //update rotational encoder flags
-    #endif
-    if(flag.CCflag)
-    {
-      nDownCount++;
-      flag.CCflag = 0;
-    }
-    if(flag.CWflag)
-    {
-      nUpCount++;
-      flag.CWflag = 0;
-    }
+    check_for_twisty();
     if (nUpCount > nUpThreshold+3)  //boundaries, folks
     { 
       nUpCount = 0;
@@ -2116,26 +2082,14 @@ void select_vowel()
 {
   while(!flag.buttFlag)
   {
-    #ifdef ENCODERLIBRARY
-    check_encoder();  //update rotational encoder flags
-    #endif
-    if(flag.CCflag)
-    {
-      nDownCount++;
-      flag.CCflag = 0;
-    }
-    if(flag.CWflag)
-    {
-      nUpCount++;
-      flag.CWflag = 0;
-    }
-    if (nUpCount > nUpThreshold+3)  //boundaries, folks
+    check_for_twisty();
+    if (nUpCount > nUpThreshold+3) 
     { 
       nUpCount = 0;
       nDownCount = 0;
       alphaVar = alphaVar+1;
     }
-    if(nDownCount > nDownThreshold+3)  //healthy boundaries
+    if(nDownCount > nDownThreshold+3)  
     { 
       nUpCount = 0;
       nDownCount = 0;
@@ -2427,21 +2381,7 @@ void ask_continue()
   display.print("yes");
   while(!flag.buttFlag)
   {
-    #ifdef ENCODERLIBRARY
-    check_encoder();  //update rotational encoder flags
-    #endif
-
-    if(flag.CCflag)
-    {
-      nDownCount++;
-      flag.CCflag = 0;
-    }
-    if(flag.CWflag)
-    {
-      nUpCount++;
-      flag.CWflag = 0;
-    }
-
+    check_for_twisty();
     if (nDownCount > nDownThreshold+3)  //boundaries, folks
     { 
       nUpCount = 0;
@@ -2467,5 +2407,23 @@ void ask_continue()
     display.display();
     end_character_row();
   }
+}
+
+
+void check_for_twisty()
+{
+    #ifdef ENCODERLIBRARY
+    check_encoder();  //update rotational encoder flags
+    #endif
+    if(flag.CCflag)
+    {
+      nDownCount++;
+      flag.CCflag = 0;
+    }
+    if(flag.CWflag)
+    {
+      nUpCount++;
+      flag.CWflag = 0;
+    }
 }
 
