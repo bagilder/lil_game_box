@@ -16,6 +16,7 @@ struct sObject      //one lone coder sprite implementation
   float y;
   float vx; //item velocity for movement
   float vy; 
+  byte objectType;	//0 for bird, 1 for pipe
   bool removed;
   byte *image;
   double rotationLast;
@@ -24,7 +25,7 @@ struct sObject      //one lone coder sprite implementation
   int spriteWidth;
 };
 
-sObject bird={
+/*sObject bird={
   SCREEN_WIDTH/3,
   SCREEN_HEIGHT/3,
   0,
@@ -32,12 +33,12 @@ sObject bird={
   false,
   sprite,
   0,
-  0};
+  0};*/
 
 
 std::vector<sObject> objectVector =       //bird in slot 0, pipes thereafter
 {
-  {SCREEN_WIDTH/3, SCREEN_HEIGHT/2, 0, 0, false, 0, sprite[0], 1, 1}/*,  //x,y,vx,vy,removed,objectType,image,height,width. bird will not be sprite[0] if we use combined image file
+  {SCREEN_WIDTH/3, SCREEN_HEIGHT/2, 0, 0, 0, false, 0, sprite[0], 10, 10}/*,  //x,y,vx,vy,removed,objectType,image,height,width. bird will not be sprite[0] if we use combined image file
   {16.5, 16.5, 0, 0, false, 0, sprite[0]},
   {10.5, 3.5, 0, 0, false, 0, sprite[0]}*/
 };
@@ -47,8 +48,6 @@ void draw_sprites()
 {
   
     display.clearDisplay();
-
-
 
     //delay(1000);
      
@@ -75,11 +74,24 @@ void draw_sprites()
     object2.x += object2.vx;
     object2.y += object2.vy;
       
-    ///this is likely where i would check if i've collided with pipes
+
+
+
+    //this is likely where i would check if i've collided with pipes if i don't do it somewhere else
 
 
 
 
+    bool conditionToRemovePipes;		//if they go off the screen. this can be combined with below but is broken out for clarity at the moment
+    if(object2.x < (0 - (object2.spriteWidth/2)))	// scrolled off the left side of the screen, with extra room to avoid popout. unsure what negative x locations will do. might need to change to 0 and deal with popout
+    {	conditionToRemovePipes = true;
+	}
+
+    if(object2.objectType && conditionToRemovePipes)	//if a pipe and should be gone
+    {	object2.removed = true;		//requires garbage collection later. could probs handle that here and add an else? ///yes the else below is in anticipation of garbage collecting here 
+    }
+    else
+	{
       for(int sX = sWidth-1; sX >=0; sX--)   //because of the mirroring problem
       {
         for(int sY = sHeight-1; sY >= 0; sY--)   //draw sprite pixels    ///because of the mirroring problem
@@ -101,19 +113,24 @@ void draw_sprites()
           }
           int offsetX = object2.x;	//this is for legibility in drawPixel but we can substitute it back to reclaim the extra 4 bytes if we want to
           int offsetY = object2.y;
-          //if(sColumn>=0 && sColumn < SCREEN_WIDTH)
-          //{
-          byte texel = object2.image[(object2.spriteWidth * (int)(sSampleY*object2.spriteHeight) + (int)(sSampleX*object2.spriteWidth))]; //sampleX is percentage, need to scale it back up to full texture size
-          if(texel)
-          {	display.drawPixel((int)((sColumn-offsetX)*costheta-(sRow-offsetY)*sintheta)+offsetX,(int)((sColumn-offsetX)*sintheta+(sRow-offsetY)*costheta)+offsetY,texel);  
-          }
+          if(!object2.removed)		//untested. might eff up some shiz. can remove if troublesome 
+          {
+          	byte texel = object2.image[(object2.spriteWidth * (int)(sSampleY*object2.spriteHeight) + (int)(sSampleX*object2.spriteWidth))]; //sampleX is percentage, need to scale it back up to full texture size
+          	if(texel)
+          	{	display.drawPixel((int)((sColumn-offsetX)*costheta-(sRow-offsetY)*sintheta)+offsetX,(int)((sColumn-offsetX)*sintheta+(sRow-offsetY)*costheta)+offsetY,texel);  
+          	}
           /*  display.setCursor(0,0);
             display.println(sColumn);
             display.println(SCREEN_WIDTH-sY);
             display.print(texel);
             display.display();*/
-         // }
+          }
         }
       }
+  	}
+    objectVector[each].x = object2.x;
+    objectVector[each].y = object2.y;
+    objectVector[each].removed = object2.removed;		//still don't remember why we aren't just using the object vector explicitly
+  }
 }
 
