@@ -37,28 +37,18 @@ struct sObject      //one lone coder sprite implementation
 byte flapSpriteCounter = 0;
 unsigned long tFlapCounter = 0;
 unsigned long tFlapNow = 0;
-int flapCountInterval = 100; //ms, how long each flap sprite is on screen before switching to the next
+int flapCountInterval = 150; //ms, how long each flap sprite is on screen before switching to the next
 int pipeGap = SCREEN_HEIGHT/4;	//will be how far apart the pipes are. might change with difficulty. should probably have a lower bound for playability
 int pipeVx = 1;
 int pipeSpeed = 1; 
 int birdFlyDist = 5;	//this will be a gamefeel thing
 
-/*sObject bird={
-  SCREEN_WIDTH/3,
-  SCREEN_HEIGHT/3,
-  0,
-  0,
-  false,
-  sprite,
-  0,
-  0};*/
-
 
 std::vector<sObject> objectVector =       //birds in slot 0, pipes thereafter
 {
-  {SCREEN_WIDTH/4+16, SCREEN_HEIGHT/2, 0, 0, 0, false, sprite[2],0,0, 10, 10},  //x,y,vx,vy,objectType,removed,*image,rotationLast,rotationNext,Height,Width. bird will not be sprite[0] if we use combined image file
-  {3*SCREEN_WIDTH/4, SCREEN_HEIGHT/2-15, 0, 0, 1, false, sprite[2],0,0, 10, 10},
-  {3*SCREEN_WIDTH/4, SCREEN_HEIGHT/2-15+pipeGap, 0, 0, 1, false, sprite[2],0,0, 10, 10}
+  {SCREEN_WIDTH/4+16, SCREEN_HEIGHT/2-15, 0, 0, 0, false, sprite[2],0,0, 10, 10},  //x,y,vx,vy,objectType,removed,*image,rotationLast,rotationNext,Height,Width. bird will not be sprite[0] if we use combined image file
+  {3*SCREEN_WIDTH/4, SCREEN_HEIGHT/2-15, 0, 0, 1, false, sprite[5],0,0, 10, 10},
+  {3*SCREEN_WIDTH/4, SCREEN_HEIGHT/2-15+pipeGap, 0, 0, 1, false, sprite[5],0,0, 10, 10}
 };
 
 
@@ -81,7 +71,7 @@ void draw_sprites()
     display.drawPixel(object2.x,object2.y,GRAY_3);  //show object origin on screen 
 
     int viewHeight = SCREEN_HEIGHT-1;
-		int sDist = 2; //scaling factor for our purposes today. 2 is normal. 1 is double size.  larger number is smaller sprite
+		int sDist = 5; //scaling factor for our purposes today. 2 is normal. 1 is double size.  larger number is smaller sprite
  		//int spriteWidth = 64; //sprite width
  		//int spriteHeight = 64;
 
@@ -103,7 +93,7 @@ void draw_sprites()
     //this is likely where i would check if i've collided with pipes if i don't do it somewhere else		///nope game state is updated in main loop
 
 
-    bool conditionToRemovePipes;		//if they go off the screen. this can be combined with below but is broken out for clarity at the moment
+    bool conditionToRemovePipes = 0;		//if they go off the screen. this can be combined with below but is broken out for clarity at the moment
     if(object2.x < (0 - (object2.spriteWidth/2)))	// scrolled off the left side of the screen, with extra room to avoid popout. unsure what negative x locations will do. might need to change to 0 and deal with popout
     {	conditionToRemovePipes = true;
 		}
@@ -113,7 +103,7 @@ void draw_sprites()
     }
     else
 		{
-      for(int sX = sWidth-1; sX >=0; sX--)   //because of the mirroring problem
+      for(int sX = sWidth-1; sX >= 0; sX--)   //because of the mirroring problem
       {
         for(int sY = sHeight-1; sY >= 0; sY--)   //draw sprite pixels    ///because of the mirroring problem
         {
@@ -154,11 +144,15 @@ void draw_sprites()
     objectVector[each].x = object2.x;
     objectVector[each].y = object2.y;
     objectVector[each].removed = object2.removed;		//still don't remember why we aren't just using the object vector explicitly
-		display.setCursor(8,8);
-		display.print(each);
+		  //garbage collect sprites
+  	objectVector.erase(	remove_if(objectVector.begin(), objectVector.end(), shouldDelete), objectVector.end());
   }
-
 	display.display();
+}
+
+
+bool shouldDelete(sObject & o)
+{	return o.removed;
 }
 
 void animate_sprites()
@@ -168,27 +162,19 @@ void animate_sprites()
   tFlapNow = millis();
   if((tFlapCounter + flapCountInterval <= tFlapNow) || (tFlapNow - tFlapCounter <= 0))		//should catch underflow
   {
-		display.setCursor(0,0);
-		display.print("enter");
-  	flapSpriteCounter = flapSpriteCounter++;	//this is gonna give me an off-by-one i just know it
+  	flapSpriteCounter++;	//this is gonna give me an off-by-one i just know it
   	objectVector[0].image = sprite[flapSpriteListNumerical[flapSpriteCounter%4]];
   	tFlapCounter = millis();
   	pipeVx = (int) tFlapCounter/10000;	//change pipe speed every 10 sec. this isn't the way to do this but i'll fix it later
   }	
-	else
-	{
-	display.setCursor(0,0);
-	display.print("enter2");
-	}
-	
-	display.setCursor(16,16);
-	display.print(tFlapNow);
+
 
   if(objectVector[0].x < objectVector[0].vx)	//bird is jumping up
   	objectVector[0].x++;
   else if(objectVector[0].vx)
   	objectVector[0].vx = 0;
   
+	display.display();
   //bird rotates
 
 
@@ -232,16 +218,16 @@ void loop()
   		}
 
   		if(horizOverlap && vertOverlap)
-  		{	game_over();
+  		{	
+				display.setCursor(0,0);
+				display.println("gama ovar");
+				display.display();
+				game_over();
   		}
 
   		objectVector[each].x -= pipeVx;	//move the pipes left
 			
   	}
-
-display.setCursor(0,32);
-			display.print("going");
-			display.display();
 
 	animate_sprites();
 	draw_sprites();
@@ -249,24 +235,45 @@ display.setCursor(0,32);
 
 void game_over()
 {
-	while(objectVector[0].x > 0)
+	/*while(objectVector[0].x > 0)
 	{
 		;
 		draw_sprites();
 		objectVector[0].removed = true;
 		//and then the garbage collection for removing sprites either here or generically where it happens afterwards
-	}
+	}*/
 	delay(100);
 	//add game over sprite to end of sprite vector
 	//
-	sObject o;
-  	o.x = SCREEN_HEIGHT/2;
-  	o.y = SCREEN_WIDTH/2;
-  	o.image = sprite[7];
-  	o.removed = false;
-  	o.objectType = 1;
-  	objectVector.push_back(o);
-	draw_sprites();
+	sObject e;	//x,y,vx,vy,objectType,removed,*image,rotationLast,rotationNext,Height,Width
+  	e.x = SCREEN_WIDTH/2;
+  	e.y = SCREEN_HEIGHT/2;
+		e.vx = 0;
+		e.vy = 0;
+  	e.image = sprite[7];
+  	e.removed = false;
+  	e.objectType = 1;
+		e.rotationLast = 0;
+		e.rotationNext = 0;
+		e.spriteHeight = 10;
+		e.spriteWidth = 10;
+  	objectVector.push_back(e);
+		draw_sprites();
+	while(!flag.buttFlag)
+	{
+		delay(1000);
+		
+		//check for input
+		#ifdef ENCODERLIBRARY
+  	check_encoder();  //update rotational encoder flags
+  	#endif
+	}
+	flag.buttFlag = 0;
+	display.clearDisplay();
+	
+	///and then here is where we'd reset everything
+
+	
 }
 
 
