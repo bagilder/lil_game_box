@@ -4,11 +4,19 @@
 // 2026-07-09
 ////////////////////
 
-// add bottom pipes to the sprite list first so i can use if each%1 to filter heights
+
+
+////sprite list when using combined image file: 
+// bird = sprite[2,3,4]
+// bottom pipe = sprite[5]
+// top pipe = sprite[6]
+// game over = sprite[7]
+
 
 #include <gamebox.h>
 #include <vector>
 #include <avr/pgmspace.h>
+#include "imagedata.h"
 #define SCREEN_ROTATION 0 //0=regular landscape, 1=box turn CC 90* portrait, 2=upside down, 3=box turn CW 90* portrait
 
 struct sObject      //one lone coder sprite implementation
@@ -46,13 +54,18 @@ int birdFlyDist = 5;	//this will be a gamefeel thing
   0};*/
 
 
-std::vector<sObject> objectVector =       //bird in slot 0, pipes thereafter
+std::vector<sObject> objectVector =       //birds in slot 0, pipes thereafter
 {
-  {SCREEN_WIDTH/3, SCREEN_HEIGHT/2, 0, 0, 0, false, 0, sprite[0], 10, 10}/*,  //x,y,vx,vy,removed,objectType,image,height,width. bird will not be sprite[0] if we use combined image file
-  {16.5, 16.5, 0, 0, false, 0, sprite[0]},
-  {10.5, 3.5, 0, 0, false, 0, sprite[0]}*/
+  {SCREEN_WIDTH/4+16, SCREEN_HEIGHT/2, 0, 0, 0, false, sprite[2],0,0, 10, 10},  //x,y,vx,vy,objectType,removed,*image,rotationLast,rotationNext,Height,Width. bird will not be sprite[0] if we use combined image file
+  {3*SCREEN_WIDTH/4, SCREEN_HEIGHT/2-15, 0, 0, 1, false, sprite[2],0,0, 10, 10},
+  {3*SCREEN_WIDTH/4, SCREEN_HEIGHT/2-15+pipeGap, 0, 0, 1, false, sprite[2],0,0, 10, 10}
 };
 
+
+void setup()   
+{
+  oled_setup(SCREEN_ROTATION);    //gamebox
+}
 
 
 void draw_sprites()
@@ -68,41 +81,38 @@ void draw_sprites()
     display.drawPixel(object2.x,object2.y,GRAY_3);  //show object origin on screen 
 
     int viewHeight = SCREEN_HEIGHT-1;
-	int sDist = 2; //scaling factor for our purposes today. 2 is normal. 1 is double size.  larger number is smaller sprite
- 	//int spriteWidth = 64; //sprite width
- 	//int spriteHeight = 64;
+		int sDist = 2; //scaling factor for our purposes today. 2 is normal. 1 is double size.  larger number is smaller sprite
+ 		//int spriteWidth = 64; //sprite width
+ 		//int spriteHeight = 64;
 
-	float sHead = (viewHeight / 2) - viewHeight/sDist; //idr why the +1 on the walls but i'm putting it here just in cases (float)(ScreenHeight() / 2.0) - ScreenHeight() / ((float)fDistanceFromPlayer)
-	float sToe = viewHeight-sHead;
-	float sHeight = sToe - sHead;   //olc method
-	//float sHeight =2*viewHeight/sDist;  //yonny zohar lecture method (approximately i guess)
-	/*if(sHeight >= spriteHeight)
-  		sHeight = spriteHeight-1;*/
-	float getRatioed = object2.spriteHeight/object2.spriteWidth;  //for square sprites this will be 1. i don't remember why we do this. if it looks weird maybe let's just change back to straight height & width
-	float sWidth = sHeight / getRatioed;    //for square sprites this will also be 1
+		float sHead = (viewHeight / 2) - viewHeight/sDist; //idr why the +1 on the walls but i'm putting it here just in cases (float)(ScreenHeight() / 2.0) - ScreenHeight() / ((float)fDistanceFromPlayer)
+		float sToe = viewHeight-sHead;
+		float sHeight = sToe - sHead;   //olc method
+		//float sHeight =2*viewHeight/sDist;  //yonny zohar lecture method (approximately i guess)
+		/*if(sHeight >= spriteHeight)
+  			sHeight = spriteHeight-1;*/
+		float getRatioed = object2.spriteHeight/object2.spriteWidth;  //for square sprites this will be 1. i don't remember why we do this. if it looks weird maybe let's just change back to straight height & width
+		float sWidth = sHeight / getRatioed;    //for square sprites this will also be 1
 
-    //update object physics
+/*
+    //update object physics		//we will be doing something else with this
     object2.x += object2.vx;
     object2.y += object2.vy;
-      
+*/
 
-
-
-    //this is likely where i would check if i've collided with pipes if i don't do it somewhere else
-
-
+    //this is likely where i would check if i've collided with pipes if i don't do it somewhere else		///nope game state is updated in main loop
 
 
     bool conditionToRemovePipes;		//if they go off the screen. this can be combined with below but is broken out for clarity at the moment
     if(object2.x < (0 - (object2.spriteWidth/2)))	// scrolled off the left side of the screen, with extra room to avoid popout. unsure what negative x locations will do. might need to change to 0 and deal with popout
     {	conditionToRemovePipes = true;
-	}
+		}
 
     if(object2.objectType && conditionToRemovePipes)	//if a pipe and should be gone
     {	object2.removed = true;		//requires garbage collection later. could probs handle that here and add an else? ///yes the else below is in anticipation of garbage collecting here 
     }
     else
-	{
+		{
       for(int sX = sWidth-1; sX >=0; sX--)   //because of the mirroring problem
       {
         for(int sY = sHeight-1; sY >= 0; sY--)   //draw sprite pixels    ///because of the mirroring problem
@@ -111,16 +121,18 @@ void draw_sprites()
           float sSampleY = sY/sHeight;
           int sColumn = (int)(object2.x + sX - (sWidth/2));
           int sRow = (int)(object2.y - sY + (sHeight/2));
+					float sintheta = 0;
+					float costheta = 1;
           if(object2.rotationLast)
           {	
           	double theta = object2.rotationLast * PI/180;
-          	float sintheta = sin(theta);  //save repeat operations
-          	float costheta = cos(theta);
+          	sintheta = sin(theta);  //save repeat operations
+          	costheta = cos(theta);
           }
           else
           {
-          	float sintheta = 0;
-          	float costheta = 1;
+          	sintheta = 0;
+          	costheta = 1;
           }
           int offsetX = object2.x;	//this is for legibility in drawPixel but we can substitute it back to reclaim the extra 4 bytes if we want to
           int offsetY = object2.y;
@@ -142,23 +154,41 @@ void draw_sprites()
     objectVector[each].x = object2.x;
     objectVector[each].y = object2.y;
     objectVector[each].removed = object2.removed;		//still don't remember why we aren't just using the object vector explicitly
+		display.setCursor(8,8);
+		display.print(each);
   }
-	
+
+	display.display();
 }
 
-animate_sprites()
+void animate_sprites()
 {
   //byte flapSpriteList[4] = {sprite[6], sprite[7], sprite[8], sprite[7]};
-  byte flapSpriteListNumerical[4] = {6,7,8,7};
+  byte flapSpriteListNumerical[4] = {2,3,4,3};
   tFlapNow = millis();
   if((tFlapCounter + flapCountInterval <= tFlapNow) || (tFlapNow - tFlapCounter <= 0))		//should catch underflow
   {
-  	flapSpriteCounter++%3;	//this is gonna give me an off-by-one i just know it
-  	objectVector[0].image = sprite[flapSpriteListNumerical[flapSpriteCounter]];
+		display.setCursor(0,0);
+		display.print("enter");
+  	flapSpriteCounter = flapSpriteCounter++;	//this is gonna give me an off-by-one i just know it
+  	objectVector[0].image = sprite[flapSpriteListNumerical[flapSpriteCounter%4]];
   	tFlapCounter = millis();
   	pipeVx = (int) tFlapCounter/10000;	//change pipe speed every 10 sec. this isn't the way to do this but i'll fix it later
   }	
+	else
+	{
+	display.setCursor(0,0);
+	display.print("enter2");
+	}
+	
+	display.setCursor(16,16);
+	display.print(tFlapNow);
 
+  if(objectVector[0].x < objectVector[0].vx)	//bird is jumping up
+  	objectVector[0].x++;
+  else if(objectVector[0].vx)
+  	objectVector[0].vx = 0;
+  
   //bird rotates
 
 
@@ -206,7 +236,12 @@ void loop()
   		}
 
   		objectVector[each].x -= pipeVx;	//move the pipes left
+			
   	}
+
+display.setCursor(0,32);
+			display.print("going");
+			display.display();
 
 	animate_sprites();
 	draw_sprites();
@@ -227,7 +262,7 @@ void game_over()
 	sObject o;
   	o.x = SCREEN_HEIGHT/2;
   	o.y = SCREEN_WIDTH/2;
-  	o.image = sprite[11];
+  	o.image = sprite[7];
   	o.removed = false;
   	o.objectType = 1;
   	objectVector.push_back(o);
@@ -242,9 +277,9 @@ void add_pipes()
 	//might want to put some bounds eventually so it remains possible to play it as time goes on
 
 
-	sObject newPipe1 = {SCREEN_WIDTH-1, newPipeHeight, 0, 0, 0, false, 1, sprite[9], 10, 10}  //x,y,vx,vy,removed,objectType,image,height,width.
+	sObject newPipe1 = {SCREEN_WIDTH-1, newPipeHeight, 0, 0, 1, false, sprite[5], 0,0,10, 10};  //x,y,vx,vy,removed,objectType,image,height,width.
 	objectVector.push_back(newPipe1);	//bottom pipe
-	sObject newPipe2 = {SCREEN_WIDTH-1, newPipeHeight+pipeGap, 0, 0, 0, false, 1, sprite[10], 10, 10}  //x,y,vx,vy,removed,objectType,image,height,width.
+	sObject newPipe2 = {SCREEN_WIDTH-1, newPipeHeight+pipeGap, 0, 0, 1, false, sprite[6], 0,0,10, 10};  //x,y,vx,vy,removed,objectType,image,height,width.
 	objectVector.push_back(newPipe2);	//top pipe
 }
 
@@ -254,5 +289,5 @@ void bird_fly()
 	//bird goes up
 	objectVector[0].rotationNext = PI/4;
 	objectVector[0].vx += birdFlyDist;
-	objectVector[0].image = sprite[6]; 	//the down-wing flap sprite
+	objectVector[0].image = sprite[2]; 	//the down-wing flap sprite
 }
